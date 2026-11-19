@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Empréstimos')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+    <main class="main">
+        <div th:replace="~{fragments/layout :: flash}"></div>
+
+        <header class="page-head">
+            <div>
+                <h1>Empréstimos</h1>
+                <p class="sub">Equipamentos e ferramentas fora do almoxarifado, com responsável e prazo.</p>
+            </div>
+            <div class="actions">
+                <a class="btn btn-primary" th:href="@{/retiradas/nova(tipo='EMPRESTIMO')}">
+                    <th:block th:replace="~{fragments/icons :: icon('plus')}"/> Novo empréstimo
+                </a>
+            </div>
+        </header>
+
+        <nav class="kpi-strip" aria-label="Situação dos empréstimos">
+            <a class="kpi" th:href="@{/emprestimos(status='abertos')}" th:classappend="${status == 'abertos'} ? 'selected'">
+                <span class="tag" style="--dot:#2f55b5">Em uso</span>
+                <span class="value" th:text="${qtdAbertos}">0</span>
+                <span class="hint" th:text="${qtdVenceSemana == 0} ? 'nenhum vence nos próximos 7 dias' : ${@fmt.plural(qtdVenceSemana, 'vence', 'vencem')} + ' nos próximos 7 dias'">0</span>
+            </a>
+            <a class="kpi" th:href="@{/emprestimos(status='atrasados')}" th:classappend="${status == 'atrasados'} ? 'selected'">
+                <span class="tag" style="--dot:#e0694f">Atrasados</span>
+                <span class="value" th:classappend="${qtdAtrasados > 0} ? 'neg'" th:text="${qtdAtrasados}">0</span>
+                <span class="hint">passaram da data de devolução</span>
+            </a>
+            <a class="kpi" th:href="@{/emprestimos(status='devolvidos')}" th:classappend="${status == 'devolvidos'} ? 'selected'">
+                <span class="tag" style="--dot:#3a9a62">Devolvidos</span>
+                <span class="value" th:text="${qtdDevolvidos}">0</span>
+                <span class="hint">exibindo os 100 mais recentes</span>
+            </a>
+            <a class="kpi" th:href="@{/emprestimos(status='todos')}" th:classappend="${status == 'todos'} ? 'selected'">
+                <span class="tag">Todos</span>
+                <span class="value" th:text="${qtdAbertos + qtdDevolvidos}">0</span>
+                <span class="hint">histórico completo</span>
+            </a>
+        </nav>
+
+        <section class="card">
+            <div class="table-wrap" th:unless="${#lists.isEmpty(lista)}">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Responsável</th>
+                        <th>Item</th>
+                        <th>Retirada</th>
+                        <th>Prazo de devolução</th>
+                        <th>Status</th>
+                        <th><span class="sr-only">Ações</span></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="e : ${lista}">
+                        <td>
+                            <div class="cell-main">
+                                <span class="avatar" th:classappend="${@fmt.cor(e.responsavel)}" th:text="${@fmt.iniciais(e.responsavel)}">AB</span>
+                                <div class="cell-stack">
+                                    <div class="t" th:text="${e.responsavel}">Nome</div>
+                                    <div class="s" th:text="${e.tecnico != null and e.setor != null ? e.setor.nome : (e.tecnico != null ? e.tecnico.matricula : 'Retirada pelo setor')}">Setor</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="cell-main">
+                                <span th:replace="~{fragments/layout :: thumb(${e.item})}"></span>
+                                <div>
+                                    <a class="t" th:href="@{/itens/{id}(id=${e.item.id})}" th:text="${e.item.nome}">Item</a>
+                                    <div class="s" th:text="${e.quantidade} + ' ' + ${e.item.unidade} + ' · ' + ${e.item.codigo}">1 un</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="nowrap">
+                            <div class="cell-stack">
+                                <div class="t" th:text="${@fmt.dataCurta(e.dataRetirada)} + ', ' + ${@fmt.hora(e.dataRetirada)}">01 nov, 10:00</div>
+                                <div class="s" th:text="${e.observacao != null ? e.observacao : 'por ' + e.registradoPor}">obs</div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="due" th:if="${e.aberto}">
+                                <span class="d" th:text="${@fmt.dataCurta(e.dataPrevista)}">12 nov</span>
+                                <div class="meter" th:classappend="${e.diasParaDevolucao < 0} ? 'danger' : (${e.diasParaDevolucao <= 2} ? 'warn' : '')">
+                                    <span th:style="|width: ${e.progressoPrazo}%|"></span>
+                                </div>
+                                <span class="days" th:classappend="${e.diasParaDevolucao < 0} ? 'late' : (${e.diasParaDevolucao <= 2} ? 'soon' : 'ok')"
+                                      th:text="${@fmt.prazo(e.diasParaDevolucao)}">em 3 dias</span>
+                            </div>
+                            <div class="cell-stack" th:unless="${e.aberto}">
+                                <div class="t" th:text="'Devolvido em ' + ${@fmt.dataCurta(e.dataDevolucao)}">Devolvido</div>
+                                <div class="s" th:text="${e.observacaoDevolucao != null} ? ${e.observacaoDevolucao} : 'Prazo era ' + ${@fmt.dataCurta(e.dataPrevista)} + (${e.recebidoPor != null} ? ' · recebido por ' + ${e.recebidoPor} : '')">prazo</div>
+                            </div>
+                        </td>
+                        <td><span class="pill dot" th:classappend="${e.status.css}" th:text="${e.status.label}">Em uso</span></td>
+                        <td>
+                            <div class="row-actions" th:if="${e.aberto}">
+                                <a class="btn btn-ghost btn-sm" th:href="@{/emprestimos/{id}/devolver(id=${e.id}, voltar=${status})}">
+                                    <th:block th:replace="~{fragments/icons :: icon('check')}"/> Registrar devolução
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty" th:if="${#lists.isEmpty(lista)}">
+                <th:block th:replace="~{fragments/icons :: icon('check-circle')}"/>
+                <strong th:text="${status == 'atrasados'} ? 'Nenhum empréstimo atrasado' : (${status == 'devolvidos'} ? 'Nenhuma devolução registrada' : 'Nenhum equipamento emprestado')">Nada</strong>
+                <span th:if="${status == 'atrasados'}">Todos os equipamentos estão dentro do prazo.</span>
+                <span th:unless="${status == 'atrasados'}">Empréstimos servem para itens retornáveis: ferramentas, monitores, docks.</span>
+                <a class="btn btn-primary btn-sm" style="margin-top:8px" th:href="@{/retiradas/nova(tipo='EMPRESTIMO')}">
+                    <th:block th:replace="~{fragments/icons :: icon('plus')}"/> Registrar empréstimo
+                </a>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

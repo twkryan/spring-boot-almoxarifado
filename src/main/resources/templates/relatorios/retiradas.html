@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Relatório de retiradas')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+    <main class="main">
+        <header class="page-head">
+            <div>
+                <h1>Histórico de retiradas</h1>
+                <p class="sub" th:text="'Consumos e empréstimos de ' + ${@fmt.data(periodo.de())} + ' a ' + ${@fmt.data(periodo.ate())} + ', por técnico e setor.'">sub</p>
+            </div>
+            <div class="actions">
+                <div th:replace="~{fragments/layout :: exportar(@{/relatorios/retiradas.pdf(de=${periodo.de()}, ate=${periodo.ate()}, tipo=${tipo}, tecnicoId=${tecnicoId}, setorId=${setorId})}, @{/relatorios/retiradas.csv(de=${periodo.de()}, ate=${periodo.ate()}, tipo=${tipo}, tecnicoId=${tecnicoId}, setorId=${setorId})})}"></div>
+            </div>
+        </header>
+
+        <section class="card">
+            <form class="filters" th:action="@{/relatorios/retiradas}" method="get" style="padding-bottom:14px">
+                <label class="chip-field">De <input type="date" name="de" th:value="${periodo.de()}"></label>
+                <label class="chip-field">Até <input type="date" name="ate" th:value="${periodo.ate()}"></label>
+                <label class="chip-field">
+                    Tipo
+                    <select name="tipo">
+                        <option value="">Consumo e empréstimo</option>
+                        <option value="CONSUMO" th:selected="${tipo != null and tipo.name() == 'CONSUMO'}">Somente consumo</option>
+                        <option value="EMPRESTIMO" th:selected="${tipo != null and tipo.name() == 'EMPRESTIMO'}">Somente empréstimo</option>
+                    </select>
+                </label>
+                <label class="chip-field">
+                    Técnico
+                    <select name="tecnicoId">
+                        <option value="">Todos</option>
+                        <option th:each="t : ${tecnicos}" th:value="${t.id}" th:text="${t.nome}" th:selected="${t.id == tecnicoId}">t</option>
+                    </select>
+                </label>
+                <label class="chip-field">
+                    Setor
+                    <select name="setorId">
+                        <option value="">Todos</option>
+                        <option th:each="s : ${setores}" th:value="${s.id}" th:text="${s.nome}" th:selected="${s.id == setorId}">s</option>
+                    </select>
+                </label>
+                <button class="btn btn-primary btn-sm" type="submit">Gerar</button>
+                <a class="btn btn-soft btn-sm" th:href="@{/relatorios/retiradas}">Limpar</a>
+            </form>
+        </section>
+
+        <section class="kpi-strip mt" aria-label="Totais do período">
+            <div class="kpi">
+                <span class="tag">Retiradas</span>
+                <span class="value" th:text="${resumo.registros()}">0</span>
+                <span class="hint">registros no período</span>
+            </div>
+            <div class="kpi">
+                <span class="tag" style="--dot:#2f55b5">Unidades</span>
+                <span class="value" th:text="${@fmt.numero(resumo.unidades())}">0</span>
+                <span class="hint">peças entregues</span>
+            </div>
+            <div class="kpi">
+                <span class="tag" style="--dot:#3a9a62">Atendidos</span>
+                <span class="value" th:text="${resumo.responsaveis()}">0</span>
+                <span class="hint">técnicos ou setores distintos</span>
+            </div>
+            <div class="kpi dark">
+                <span class="tag">Valor retirado</span>
+                <span class="value sm" th:text="${@fmt.moeda(resumo.valor())}">R$ 0</span>
+                <span class="hint">pelo custo na data da retirada</span>
+            </div>
+        </section>
+
+        <div class="grid grid-3">
+            <section class="card">
+                <div class="card-head"><div><h2>Por técnico</h2><p class="sub">Maiores valores retirados</p></div></div>
+                <div class="card-body"><div th:replace="~{relatorios/ranking :: ranking(${porTecnico}, 'retirada', 'retiradas')}"></div></div>
+            </section>
+            <section class="card">
+                <div class="card-head"><div><h2>Por setor</h2><p class="sub">Centro de custo de destino</p></div></div>
+                <div class="card-body"><div th:replace="~{relatorios/ranking :: ranking(${porSetor}, 'retirada', 'retiradas')}"></div></div>
+            </section>
+            <section class="card">
+                <div class="card-head"><div><h2>Itens mais retirados</h2><p class="sub">Por valor</p></div></div>
+                <div class="card-body"><div th:replace="~{relatorios/ranking :: ranking(${porItem}, 'retirada', 'retiradas')}"></div></div>
+            </section>
+        </div>
+
+        <section class="card mt">
+            <div class="card-head">
+                <div>
+                    <h2>Detalhamento</h2>
+                    <p class="sub" th:text="${@fmt.plural(#lists.size(movs), 'retirada', 'retiradas')}">0</p>
+                </div>
+            </div>
+            <div class="table-wrap" th:unless="${#lists.isEmpty(movs)}">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Item</th>
+                        <th>Técnico</th>
+                        <th>Setor</th>
+                        <th class="num">Qtd.</th>
+                        <th class="num">Custo unit.</th>
+                        <th class="num">Total</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="m : ${movs}">
+                        <td class="nowrap" th:text="${@fmt.dataHora(m.dataHora)}">data</td>
+                        <td><span class="pill" th:classappend="${m.tipo.css}" th:text="${m.tipo.label}">Consumo</span></td>
+                        <td>
+                            <div class="cell-stack">
+                                <a class="t" th:href="@{/itens/{id}(id=${m.item.id})}" th:text="${m.item.nome}">Item</a>
+                                <div class="s" th:text="${m.observacao != null ? m.observacao : m.item.codigo}">obs</div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="cell-main" th:if="${m.tecnico != null}">
+                                <span class="avatar sm" th:classappend="${@fmt.cor(m.tecnico.nome)}" th:text="${@fmt.iniciais(m.tecnico.nome)}">AB</span>
+                                <span th:text="${m.tecnico.nome}">Nome</span>
+                            </div>
+                            <span class="faint" th:if="${m.tecnico == null}">—</span>
+                        </td>
+                        <td>
+                            <div class="cell-stack" th:if="${m.setor != null}">
+                                <div class="t" th:text="${m.setor.nome}">Setor</div>
+                                <div class="s mono" th:text="${m.setor.centroCusto}">CC</div>
+                            </div>
+                        </td>
+                        <td class="num" th:text="${m.quantidade} + ' ' + ${m.item.unidade}">1</td>
+                        <td class="num muted" th:text="${@fmt.moeda(m.custoUnitario)}">R$ 0</td>
+                        <td class="num strong" th:text="${@fmt.moeda(m.custoTotal)}">R$ 0</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="empty" th:if="${#lists.isEmpty(movs)}">
+                <th:block th:replace="~{fragments/icons :: icon('report')}"/>
+                <strong>Nenhuma retirada no período</strong>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

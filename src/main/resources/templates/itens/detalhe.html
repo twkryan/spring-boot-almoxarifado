@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${item.nome})}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+    <main class="main">
+        <div th:replace="~{fragments/layout :: flash}"></div>
+
+        <a class="crumb" th:href="@{/itens}">
+            <th:block th:replace="~{fragments/icons :: icon('arrow-left')}"/> Estoque
+        </a>
+
+        <header class="page-head">
+            <div class="detail-head">
+                <span class="thumb lg" th:classappend="'cat-' + ${item.categoria.name()}">
+                    <th:block th:replace="~{fragments/icons :: icon(${item.categoria.icone})}"/>
+                </span>
+                <div class="title">
+                    <h1 th:text="${item.nome}">Item</h1>
+                    <div class="meta">
+                        <span class="pill outline mono" th:text="${item.codigo}">COD</span>
+                        <span class="pill" th:text="${item.categoria.label}">Cabos</span>
+                        <span class="pill" th:classappend="${item.tipo.name() == 'RETORNAVEL'} ? 'info' : 'neutral'" th:text="${item.tipo.label}">Consumível</span>
+                        <span class="pill dot" th:classappend="${item.statusCss}" th:text="${item.statusLabel}">Normal</span>
+                        <span class="pill danger" th:unless="${item.ativo}">Arquivado</span>
+                    </div>
+                </div>
+            </div>
+            <div class="actions" th:if="${item.ativo}">
+                <a class="btn btn-ghost" th:href="@{/itens/{id}/editar(id=${item.id})}">
+                    <th:block th:replace="~{fragments/icons :: icon('edit')}"/> Editar
+                </a>
+                <a class="btn btn-ghost" th:href="@{/reposicoes/nova(itemId=${item.id})}">
+                    <th:block th:replace="~{fragments/icons :: icon('in')}"/> Repor
+                </a>
+                <a class="btn btn-primary" th:href="@{/retiradas/nova(itemId=${item.id})}">
+                    <th:block th:replace="~{fragments/icons :: icon('out')}"/>
+                    <span th:text="${item.tipo.name() == 'RETORNAVEL'} ? 'Emprestar' : 'Registrar consumo'">Retirar</span>
+                </a>
+            </div>
+        </header>
+
+        <div class="grid grid-side">
+            <div class="stack">
+                <section class="card">
+                    <div class="card-head">
+                        <div>
+                            <h2>Histórico de movimentações</h2>
+                            <p class="sub" th:text="${@fmt.plural(totalMovimentos, 'registro', 'registros')} + ' desde o cadastro' + (${totalMovimentos > 40} ? ' · exibindo os 40 mais recentes' : '')">registros</p>
+                        </div>
+                        <a class="btn btn-soft btn-sm" th:href="@{/historico(q=${item.codigo}, de=${#temporals.format(item.criadoEm, 'yyyy-MM-dd')})}">Ver no histórico</a>
+                    </div>
+                    <div class="table-wrap" th:unless="${#lists.isEmpty(historico)}">
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Tipo</th>
+                                <th>Responsável</th>
+                                <th class="num">Qtd.</th>
+                                <th class="num">Saldo</th>
+                                <th class="num">Valor</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="m : ${historico}">
+                                <td class="nowrap">
+                                    <div class="cell-stack">
+                                        <div class="t" th:text="${@fmt.data(m.dataHora)}">01/01/2026</div>
+                                        <div class="s" th:text="${@fmt.hora(m.dataHora)}">10:00</div>
+                                    </div>
+                                </td>
+                                <td><span class="pill" th:classappend="${m.tipo.css}" th:text="${m.tipo.label}">Consumo</span></td>
+                                <td>
+                                    <div class="cell-stack">
+                                        <div class="t" th:text="${m.responsavel}">Fulano</div>
+                                        <div class="s" th:text="${m.observacao != null ? m.observacao : 'por ' + m.usuario}">obs</div>
+                                    </div>
+                                </td>
+                                <td class="num"><span class="qty-delta" th:classappend="${m.variacao >= 0} ? 'in' : 'out'" th:text="${@fmt.sinal(m.variacao)}">-1</span></td>
+                                <td class="num" th:text="${m.saldoApos}">10</td>
+                                <td class="num muted" th:text="${@fmt.moeda(m.custoTotal)}">R$ 0</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="empty" th:if="${#lists.isEmpty(historico)}">
+                        <th:block th:replace="~{fragments/icons :: icon('history')}"/>
+                        <strong>Sem movimentações</strong>
+                    </div>
+                </section>
+
+                <section class="card" th:unless="${#lists.isEmpty(emprestados)}">
+                    <div class="card-head">
+                        <div>
+                            <h2>Com quem está</h2>
+                            <p class="sub">Empréstimos em aberto deste item</p>
+                        </div>
+                    </div>
+                    <div class="card-body flush">
+                        <div class="list">
+                            <div class="list-row" th:each="e : ${emprestados}">
+                                <span class="avatar" th:classappend="${@fmt.cor(e.responsavel)}" th:text="${@fmt.iniciais(e.responsavel)}">AB</span>
+                                <div class="body">
+                                    <div class="t" th:text="${e.responsavel}">Nome</div>
+                                    <div class="s" th:text="${e.quantidade} + ' ' + ${item.unidade} + ' · retirado em ' + ${@fmt.data(e.dataRetirada)}">detalhe</div>
+                                </div>
+                                <span class="pill dot" th:classappend="${e.status.css}" th:text="'até ' + ${@fmt.dataCurta(e.dataPrevista)}">até 10 nov</span>
+                                <a class="btn btn-ghost btn-sm" th:href="@{/emprestimos/{id}/devolver(id=${e.id}, voltar='item')}">Devolver</a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <aside class="stack">
+                <section class="card">
+                    <div class="card-body">
+                        <p class="muted">Saldo atual</p>
+                        <div class="big-stat" style="margin-top:6px">
+                            <span class="n" th:text="${item.quantidade}">10</span>
+                            <span class="u" th:text="${item.unidade}">un</span>
+                        </div>
+                        <div class="meter" style="margin-top:14px" th:classappend="${item.statusCss}">
+                            <span th:style="|width: ${item.nivelEstoque}%|"></span>
+                        </div>
+                        <div class="stat-row">
+                            <div><div class="k">Mínimo</div><div class="v" th:text="${item.estoqueMinimo}">4</div></div>
+                            <div><div class="k">Custo unit.</div><div class="v" th:text="${@fmt.moeda(item.custoUnitario)}">R$ 0</div></div>
+                            <div><div class="k">Valor</div><div class="v" th:text="${@fmt.moeda(item.valorEmEstoque)}">R$ 0</div></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div class="card-head"><h2>Especificação</h2></div>
+                    <div class="card-body">
+                        <dl class="kv">
+                            <div><dt>Localização</dt><dd th:text="${item.localizacao != null ? item.localizacao : '—'}">A1</dd></div>
+                            <div><dt>Unidades retiradas</dt><dd th:text="${unidadesRetiradas} + ' ' + ${item.unidade}">0</dd></div>
+                            <div><dt>Total reposto</dt><dd th:text="${@fmt.moeda(custoReposto)}">R$ 0</dd></div>
+                            <div><dt>Cadastrado em</dt><dd th:text="${@fmt.data(item.criadoEm)}">01/01/2026</dd></div>
+                            <div th:if="${item.descricao != null and !#strings.isEmpty(item.descricao)}"><dt>Descrição</dt><dd th:text="${item.descricao}">desc</dd></div>
+                        </dl>
+                    </div>
+                </section>
+
+                <section class="card" id="inventario" th:if="${item.ativo}">
+                    <div class="card-head">
+                        <div>
+                            <h2>Contagem de inventário</h2>
+                            <p class="sub">Informe o que foi contado na prateleira. A diferença vira um ajuste auditável.</p>
+                        </div>
+                    </div>
+                    <form class="card-body form" th:action="@{/itens/{id}/ajuste(id=${item.id})}" method="post">
+                        <div class="field">
+                            <label for="contado">Quantidade contada</label>
+                            <div class="input-affix end">
+                                <input class="input" id="contado" name="contado" type="number" min="0" required th:value="${item.quantidade}">
+                                <span class="affix" th:text="${item.unidade}">un</span>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label for="justificativa">Justificativa</label>
+                            <input class="input" id="justificativa" name="justificativa" maxlength="300" required
+                                   placeholder="Ex.: 2 unidades avariadas descartadas">
+                        </div>
+                        <button class="btn btn-accent btn-block" type="submit">Registrar contagem</button>
+                    </form>
+                </section>
+
+                <form th:if="${item.ativo}" th:action="@{/itens/{id}/arquivar(id=${item.id})}" method="post">
+                    <button class="btn btn-danger btn-block" type="submit">
+                        <th:block th:replace="~{fragments/icons :: icon('archive')}"/> Arquivar item
+                    </button>
+                </form>
+            </aside>
+        </div>
+    </main>
+</div>
+</body>
+</html>

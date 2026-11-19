@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Exportar relatórios')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+    <main class="main">
+        <header class="page-head">
+            <div>
+                <h1>Exportar relatórios</h1>
+                <p class="sub">Escolha o relatório, ajuste o período e baixe em <strong>PDF</strong> (para imprimir ou enviar) ou
+                    <strong>CSV</strong> (para abrir no Excel ou Google Planilhas).</p>
+            </div>
+        </header>
+
+        <div class="export-grid">
+            <!--/* Retiradas */-->
+            <form class="card export-card" th:action="@{/relatorios/retiradas.pdf}" method="get">
+                <div class="export-card-head">
+                    <span class="export-ic"><th:block th:replace="~{fragments/icons :: icon('report')}"/></span>
+                    <div>
+                        <h2>Histórico de retiradas</h2>
+                        <p>Consumos e empréstimos por técnico e setor, com custo de cada retirada.</p>
+                    </div>
+                </div>
+                <div class="export-card-body">
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="r-de">De</label>
+                            <input class="input" id="r-de" type="date" name="de" th:value="${de}">
+                        </div>
+                        <div class="field">
+                            <label for="r-ate">Até</label>
+                            <input class="input" id="r-ate" type="date" name="ate" th:value="${ate}">
+                        </div>
+                        <div class="field">
+                            <label for="r-tec">Técnico</label>
+                            <select class="select" id="r-tec" name="tecnicoId">
+                                <option value="">Todos</option>
+                                <option th:each="t : ${tecnicos}" th:value="${t.id}" th:text="${t.nome}">t</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="r-setor">Setor</label>
+                            <select class="select" id="r-setor" name="setorId">
+                                <option value="">Todos</option>
+                                <option th:each="s : ${setores}" th:value="${s.id}" th:text="${s.nome}">s</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="export-actions">
+                    <button class="btn btn-primary" type="submit" th:formaction="@{/relatorios/retiradas.pdf}">
+                        <th:block th:replace="~{fragments/icons :: icon('file-pdf')}"/> Baixar PDF
+                    </button>
+                    <button class="btn btn-ghost" type="submit" th:formaction="@{/relatorios/retiradas.csv}">
+                        <th:block th:replace="~{fragments/icons :: icon('table')}"/> Baixar CSV
+                    </button>
+                    <button class="btn btn-soft" type="submit" th:formaction="@{/relatorios/retiradas}">Ver na tela</button>
+                </div>
+            </form>
+
+            <!--/* Custos */-->
+            <form class="card export-card" th:action="@{/relatorios/custos.pdf}" method="get">
+                <div class="export-card-head">
+                    <span class="export-ic"><th:block th:replace="~{fragments/icons :: icon('chart')}"/></span>
+                    <div>
+                        <h2>Custos mensais de reposição</h2>
+                        <p>Gasto com compras mês a mês, comparado ao consumo, e itens mais caros.</p>
+                    </div>
+                </div>
+                <div class="export-card-body">
+                    <div class="field">
+                        <span class="label">Período</span>
+                        <div class="choices choices-4">
+                            <label class="choice" th:each="n : ${ {3, 6, 12, 24} }">
+                                <input type="radio" name="meses" th:value="${n}" th:checked="${n == 12}">
+                                <span class="box box-sm"><strong th:text="${n} + ' meses'">12 meses</strong></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="export-actions">
+                    <button class="btn btn-primary" type="submit" th:formaction="@{/relatorios/custos.pdf}">
+                        <th:block th:replace="~{fragments/icons :: icon('file-pdf')}"/> Baixar PDF
+                    </button>
+                    <button class="btn btn-ghost" type="submit" th:formaction="@{/relatorios/custos.csv}">
+                        <th:block th:replace="~{fragments/icons :: icon('table')}"/> Baixar CSV
+                    </button>
+                    <button class="btn btn-soft" type="submit" th:formaction="@{/relatorios/custos}">Ver na tela</button>
+                </div>
+            </form>
+
+            <!--/* Auditoria */-->
+            <form class="card export-card" th:action="@{/relatorios/auditoria.pdf}" method="get">
+                <div class="export-card-head">
+                    <span class="export-ic"><th:block th:replace="~{fragments/icons :: icon('audit')}"/></span>
+                    <div>
+                        <h2>Auditoria de estoque</h2>
+                        <p>Saldo de cada item conferido com o histórico, valor em estoque e alertas.</p>
+                    </div>
+                </div>
+                <div class="export-card-body">
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="a-filtro">Itens</label>
+                            <select class="select" id="a-filtro" name="filtro">
+                                <option value="todos">Todos os itens</option>
+                                <option value="divergentes">Somente divergências</option>
+                                <option value="baixo">Abaixo do mínimo</option>
+                                <option value="parados">Sem giro há 60+ dias</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="a-cat">Categoria</label>
+                            <select class="select" id="a-cat" name="categoria">
+                                <option value="">Todas</option>
+                                <option th:each="c : ${categorias}" th:value="${c}" th:text="${c.label}">c</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="export-actions">
+                    <button class="btn btn-primary" type="submit" th:formaction="@{/relatorios/auditoria.pdf}">
+                        <th:block th:replace="~{fragments/icons :: icon('file-pdf')}"/> Baixar PDF
+                    </button>
+                    <button class="btn btn-ghost" type="submit" th:formaction="@{/relatorios/auditoria.csv}">
+                        <th:block th:replace="~{fragments/icons :: icon('table')}"/> Baixar CSV
+                    </button>
+                    <button class="btn btn-soft" type="submit" th:formaction="@{/relatorios/auditoria}">Ver na tela</button>
+                </div>
+            </form>
+
+            <aside class="note export-help">
+                <strong>PDF ou CSV?</strong>
+                <ul>
+                    <li><strong>PDF</strong>: documento formatado, com resumo e tabelas, pronto para imprimir, assinar ou anexar.</li>
+                    <li><strong>CSV</strong>: dados linha a linha, separados por ponto e vírgula, que abrem direto no Excel.</li>
+                    <li>Dentro de cada relatório, o botão <strong>Exportar</strong> no topo baixa exatamente o que está filtrado na tela.</li>
+                </ul>
+            </aside>
+        </div>
+    </main>
+</div>
+</body>
+</html>

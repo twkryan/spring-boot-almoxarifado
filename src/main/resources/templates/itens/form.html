@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${item.id == null ? 'Novo item' : 'Editar item'})}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+    <main class="main">
+        <a class="crumb" th:href="${item.id == null} ? @{/itens} : @{/itens/{id}(id=${item.id})}">
+            <th:block th:replace="~{fragments/icons :: icon('arrow-left')}"/> Voltar
+        </a>
+        <header class="page-head">
+            <div>
+                <h1 th:text="${item.id == null} ? 'Novo item' : 'Editar item'">Novo item</h1>
+                <p class="sub" th:text="${item.id == null} ? 'Cadastre uma peça, periférico ou ferramenta.' : 'O saldo só muda por movimentações: use retirada, reposição ou ajuste de inventário.'">
+                    Cadastre uma peça.</p>
+            </div>
+        </header>
+
+        <div class="grid grid-side">
+            <form class="card form" th:object="${item}" method="post" novalidate
+                  th:action="${item.id == null} ? @{/itens} : @{/itens/{id}(id=${item.id})}">
+                <div class="card-body form">
+                    <div class="alert alert-erro" th:if="${#fields.hasErrors('*')}">
+                        <th:block th:replace="~{fragments/icons :: icon('alert')}"/>
+                        <span>Revise os campos destacados.</span>
+                    </div>
+
+                    <p class="form-section-title">Identificação</p>
+                    <div class="form-grid">
+                        <div class="field" th:classappend="${#fields.hasErrors('codigo')} ? 'has-error'">
+                            <label for="codigo">Código</label>
+                            <input class="input mono" id="codigo" th:field="*{codigo}" placeholder="CAB-HDMI-18" maxlength="30">
+                            <span class="field-error" th:if="${#fields.hasErrors('codigo')}" th:errors="*{codigo}"></span>
+                        </div>
+                        <div class="field" th:classappend="${#fields.hasErrors('nome')} ? 'has-error'">
+                            <label for="nome">Nome</label>
+                            <input class="input" id="nome" th:field="*{nome}" placeholder="Cabo HDMI 2.0 1,8 m" maxlength="120">
+                            <span class="field-error" th:if="${#fields.hasErrors('nome')}" th:errors="*{nome}"></span>
+                        </div>
+                        <div class="field" th:classappend="${#fields.hasErrors('categoria')} ? 'has-error'">
+                            <label for="categoria">Categoria</label>
+                            <select class="select" id="categoria" th:field="*{categoria}">
+                                <option value="">Selecione…</option>
+                                <option th:each="c : ${categorias}" th:value="${c}" th:text="${c.label}">Cabos</option>
+                            </select>
+                            <span class="field-error" th:if="${#fields.hasErrors('categoria')}" th:errors="*{categoria}"></span>
+                        </div>
+                        <div class="field" th:classappend="${#fields.hasErrors('localizacao')} ? 'has-error'">
+                            <label for="localizacao">Localização</label>
+                            <input class="input" id="localizacao" th:field="*{localizacao}" placeholder="Prateleira A1-01" maxlength="60">
+                            <span class="field-error" th:if="${#fields.hasErrors('localizacao')}" th:errors="*{localizacao}"></span>
+                        </div>
+                        <div class="field full">
+                            <label for="descricao">Descrição <span class="faint">(opcional)</span></label>
+                            <textarea class="textarea" id="descricao" th:field="*{descricao}" maxlength="500"
+                                      placeholder="Especificações, compatibilidade, fornecedor preferencial…"></textarea>
+                        </div>
+                    </div>
+
+                    <p class="form-section-title">Controle de saída</p>
+                    <div class="choices">
+                        <label class="choice" th:each="t : ${tipos}">
+                            <input type="radio" th:field="*{tipo}" th:value="${t}">
+                            <span class="box">
+                                <span class="ic"><th:block th:replace="~{fragments/icons :: icon(${t.name() == 'RETORNAVEL' ? 'loan' : 'out'})}"/></span>
+                                <span><strong th:text="${t.label}">Retornável</strong><span th:text="${t.descricao}">desc</span></span>
+                            </span>
+                        </label>
+                    </div>
+                    <span class="field-error" th:if="${#fields.hasErrors('tipo')}" th:errors="*{tipo}"></span>
+
+                    <p class="form-section-title">Estoque e custo</p>
+                    <div class="form-grid">
+                        <div class="field" th:if="${item.id == null}" th:classappend="${#fields.hasErrors('quantidade')} ? 'has-error'">
+                            <label for="quantidade">Saldo inicial</label>
+                            <input class="input" id="quantidade" type="number" min="0" th:field="*{quantidade}">
+                            <span class="help">Registrado como movimentação de saldo inicial.</span>
+                            <span class="field-error" th:if="${#fields.hasErrors('quantidade')}" th:errors="*{quantidade}"></span>
+                        </div>
+                        <div class="field" th:classappend="${#fields.hasErrors('unidade')} ? 'has-error'">
+                            <label for="unidade">Unidade</label>
+                            <input class="input" id="unidade" th:field="*{unidade}" placeholder="un, kit, pct, m" maxlength="10">
+                            <span class="field-error" th:if="${#fields.hasErrors('unidade')}" th:errors="*{unidade}"></span>
+                        </div>
+                        <div class="field" th:classappend="${#fields.hasErrors('estoqueMinimo')} ? 'has-error'">
+                            <label for="estoqueMinimo">Estoque mínimo</label>
+                            <input class="input" id="estoqueMinimo" type="number" min="0" th:field="*{estoqueMinimo}">
+                            <span class="help">Ao atingir este saldo, o item entra nos alertas de reposição.</span>
+                            <span class="field-error" th:if="${#fields.hasErrors('estoqueMinimo')}" th:errors="*{estoqueMinimo}"></span>
+                        </div>
+                        <div class="field" th:classappend="${#fields.hasErrors('custoUnitario')} ? 'has-error'">
+                            <label for="custoUnitario">Custo unitário</label>
+                            <div class="input-affix">
+                                <span class="affix">R$</span>
+                                <input class="input" id="custoUnitario" type="text" inputmode="decimal" autocomplete="off" th:field="*{custoUnitario}" placeholder="0,00">
+                            </div>
+                            <span class="field-error" th:if="${#fields.hasErrors('custoUnitario')}" th:errors="*{custoUnitario}"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <a class="btn btn-ghost" th:href="${item.id == null} ? @{/itens} : @{/itens/{id}(id=${item.id})}">Cancelar</a>
+                        <button class="btn btn-primary" type="submit" th:text="${item.id == null} ? 'Cadastrar item' : 'Salvar alterações'">Salvar</button>
+                    </div>
+                </div>
+            </form>
+
+            <aside class="stack">
+                <div class="note">
+                    <strong>Retornável ou consumível?</strong>
+                    <ul>
+                        <li><strong>Retornável</strong>: ferramentas, monitores, docks. Saem por empréstimo com prazo de devolução.</li>
+                        <li><strong>Consumível</strong>: cabos, conectores, insumos. Saem por consumo e entram no custo do setor.</li>
+                    </ul>
+                </div>
+                <div class="note">
+                    <strong>Código</strong>: use um padrão curto e legível, como <span class="mono">CAT-MODELO</span>.
+                    Ele aparece nos relatórios e nas exportações CSV.
+                </div>
+            </aside>
+        </div>
+    </main>
+</div>
+</body>
+</html>

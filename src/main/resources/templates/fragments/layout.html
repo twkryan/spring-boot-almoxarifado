@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' · Almox TI'">Almox TI</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+
+<body>
+
+<aside th:fragment="sidebar" class="sidebar">
+    <a class="brand" th:href="@{/}">
+        <span class="brand-mark"><th:block th:replace="~{fragments/icons :: icon('wrench')}"/></span>
+        <span>
+            <span class="brand-name">Almox TI</span><br>
+            <span class="brand-sub">TI &amp; Manutenção</span>
+        </span>
+    </a>
+
+    <a class="quick" th:href="@{/retiradas/nova}">
+        <th:block th:replace="~{fragments/icons :: icon('out')}"/> Nova retirada
+    </a>
+
+    <nav class="nav" aria-label="Menu principal">
+        <div class="nav-label">Operação</div>
+        <a th:href="@{/}" th:classappend="${path == '/'} ? 'active'">
+            <th:block th:replace="~{fragments/icons :: icon('grid')}"/> Painel
+        </a>
+        <a th:href="@{/itens}" th:classappend="${#strings.startsWith(path, '/itens')} ? 'active'">
+            <th:block th:replace="~{fragments/icons :: icon('box')}"/> Estoque
+        </a>
+        <a th:href="@{/retiradas/nova}" th:classappend="${#strings.startsWith(path, '/retiradas')} ? 'active'">
+            <th:block th:replace="~{fragments/icons :: icon('out')}"/> Retirada
+        </a>
+        <a th:href="@{/reposicoes/nova}" th:classappend="${#strings.startsWith(path, '/reposicoes')} ? 'active'">
+            <th:block th:replace="~{fragments/icons :: icon('in')}"/> Reposição
+        </a>
+        <a th:href="@{/emprestimos}" th:classappend="${#strings.startsWith(path, '/emprestimos')} ? 'active'">
+            <th:block th:replace="~{fragments/icons :: icon('loan')}"/> Empréstimos
+            <span class="count" th:if="${badgeAtrasados != null and badgeAtrasados > 0}" th:text="${badgeAtrasados}"
+                  th:title="${@fmt.plural(badgeAtrasados, 'empréstimo atrasado', 'empréstimos atrasados')}">2</span>
+        </a>
+        <a th:href="@{/historico}" th:classappend="${#strings.startsWith(path, '/historico')} ? 'active'">
+            <th:block th:replace="~{fragments/icons :: icon('history')}"/> Histórico
+        </a>
+
+        <div class="nav-label">Relatórios</div>
+        <a class="nav-export" th:href="@{/relatorios/exportar}" th:classappend="${#strings.startsWith(path, '/relatorios/exportar')} ? 'active'">
+            <th:block th:replace="~{fragments/icons :: icon('export')}"/> Exportar
+            <span class="fmt-tag">PDF · CSV</span>
+        </a>
+        <a th:href="@{/relatorios/auditoria}" th:classappend="${#strings.startsWith(path, '/relatorios/auditoria')} ? 'active'">
+            <th:block th:replace="~{fragments/icons :: icon('audit')}"/> Auditoria de estoque
+        </a>
+        <a th:href="@{/relatorios/retiradas}" th:classappend="${#strings.startsWith(path, '/relatorios/retiradas')} ? 'active'">
+            <th:block th:replace="~{fragments/icons :: icon('report')}"/> Retiradas
+        </a>
+        <a th:href="@{/relatorios/custos}" th:classappend="${#strings.startsWith(path, '/relatorios/custos')} ? 'active'">
+            <th:block th:replace="~{fragments/icons :: icon('chart')}"/> Custos de reposição
+        </a>
+
+        <div class="nav-label">Cadastros</div>
+        <a th:href="@{/tecnicos}" th:classappend="${#strings.startsWith(path, '/tecnicos')} ? 'active'">
+            <th:block th:replace="~{fragments/icons :: icon('users')}"/> Técnicos
+        </a>
+        <a th:href="@{/setores}" th:classappend="${#strings.startsWith(path, '/setores')} ? 'active'">
+            <th:block th:replace="~{fragments/icons :: icon('building')}"/> Setores
+        </a>
+        <a th:href="@{/usuarios}" th:classappend="${#strings.startsWith(path, '/usuarios')} ? 'active'">
+            <th:block th:replace="~{fragments/icons :: icon('user')}"/> Usuários
+        </a>
+    </nav>
+
+    <div class="sidebar-foot" th:if="${usuarioLogado != null}">
+        <div class="user-card">
+            <span class="avatar" th:classappend="${@fmt.cor(usuarioLogado.nome)}"
+                  th:text="${@fmt.iniciais(usuarioLogado.nome)}">AD</span>
+            <span class="who">
+                <strong th:text="${usuarioLogado.nome}">Usuário</strong>
+                <span th:text="${usuarioLogado.perfil.label}">Perfil</span>
+            </span>
+            <form th:action="@{/logout}" method="post" class="inline-form">
+                <button type="submit" class="icon-btn" title="Sair" aria-label="Sair">
+                    <th:block th:replace="~{fragments/icons :: icon('logout')}"/>
+                </button>
+            </form>
+        </div>
+    </div>
+</aside>
+
+<div th:fragment="flash" class="flash-stack" th:if="${sucesso != null or erro != null}">
+    <div class="alert alert-ok" role="status" th:if="${sucesso}">
+        <th:block th:replace="~{fragments/icons :: icon('check-circle')}"/>
+        <span th:text="${sucesso}">Ok</span>
+    </div>
+    <div class="alert alert-erro" role="alert" th:if="${erro}">
+        <th:block th:replace="~{fragments/icons :: icon('alert')}"/>
+        <span th:text="${erro}">Erro</span>
+    </div>
+</div>
+
+<!--/* Grupo de exportação em destaque: baixa o relatório da tela, com os filtros aplicados. */-->
+<div th:fragment="exportar(pdfUrl, csvUrl)" class="export-group" role="group" aria-label="Exportar este relatório">
+    <span class="export-label">
+        <th:block th:replace="~{fragments/icons :: icon('export')}"/>
+        <span>Exportar<small>com os filtros aplicados</small></span>
+    </span>
+    <a class="export-btn" th:href="${pdfUrl}" title="Baixar em PDF, pronto para imprimir ou enviar">
+        <th:block th:replace="~{fragments/icons :: icon('file-pdf')}"/> PDF
+    </a>
+    <a class="export-btn" th:href="${csvUrl}" title="Baixar em CSV, para abrir no Excel ou Google Planilhas">
+        <th:block th:replace="~{fragments/icons :: icon('table')}"/> CSV
+    </a>
+</div>
+
+<!--/* Barra de estoque com quantidade e mínimo. */-->
+<div th:fragment="stock(item)" class="stock">
+    <div class="top">
+        <span class="q" th:text="${item.quantidade} + ' ' + ${item.unidade}">10 un</span>
+        <span class="min" th:text="'mín. ' + ${item.estoqueMinimo}">mín. 4</span>
+    </div>
+    <div class="meter" th:classappend="${item.statusCss}">
+        <span th:style="|width: ${item.nivelEstoque}%|"></span>
+    </div>
+</div>
+
+<!--/* Miniatura com ícone da categoria. */-->
+<span th:fragment="thumb(item)" class="thumb" th:classappend="'cat-' + ${item.categoria.name()}">
+    <th:block th:replace="~{fragments/icons :: icon(${item.categoria.icone})}"/>
+</span>
+
+</body>
+</html>

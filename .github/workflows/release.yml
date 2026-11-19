@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publicar almox-ti.jar
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Empacotar
+        run: ./mvnw -B -DskipTests package
+
+      - name: Publicar na GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: target/almox-ti.jar
+          body: |
+            ## Almox TI ${{ github.ref_name }}
+
+            Sistema de almoxarifado de TI e manutenção, em um único arquivo executável.
+
+            ### Como rodar
+
+            1. Instale o **Java 21** (ou mais novo): https://adoptium.net/temurin/releases/?version=21
+            2. Baixe o `almox-ti.jar` abaixo e coloque em uma pasta vazia.
+            3. Abra o terminal nessa pasta e rode:
+
+               ```
+               java -jar almox-ti.jar
+               ```
+
+               No Windows também funciona dar dois cliques no `iniciar.bat`
+               (baixe-o no repositório e coloque na mesma pasta do jar).
+
+            4. Acesse http://localhost:8080 e clique em **Criar conta** — o primeiro
+               usuário cadastrado vira administrador.
+
+            Os dados ficam na pasta `data/`, criada ao lado do jar. Faça backup dela.
+
+            Guia completo: docs/INSTALACAO.md no repositório.

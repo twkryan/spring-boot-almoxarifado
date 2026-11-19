@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Auditoria de estoque')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+    <main class="main">
+        <header class="page-head">
+            <div>
+                <h1>Auditoria de estoque</h1>
+                <p class="sub" th:text="'Gerado em ' + ${@fmt.dataHora(geradoEm)} + '. O saldo de cada item é recalculado a partir de todas as movimentações e comparado ao saldo do sistema.'">sub</p>
+            </div>
+            <div class="actions">
+                <div th:replace="~{fragments/layout :: exportar(@{/relatorios/auditoria.pdf(categoria=${categoria}, filtro=${filtro})}, @{/relatorios/auditoria.csv(categoria=${categoria}, filtro=${filtro})})}"></div>
+            </div>
+        </header>
+
+        <nav class="kpi-strip" aria-label="Resumo da auditoria">
+            <a class="kpi" th:href="@{/relatorios/auditoria(categoria=${categoria})}" th:classappend="${filtro == 'todos'} ? 'selected'">
+                <span class="tag">Itens auditados</span>
+                <span class="value" th:text="${totalItens}">0</span>
+                <span class="hint">todos os itens ativos</span>
+            </a>
+            <a class="kpi" th:href="@{/relatorios/auditoria(categoria=${categoria}, filtro='divergentes')}" th:classappend="${filtro == 'divergentes'} ? 'selected'">
+                <span class="tag" th:style="${divergentes > 0} ? '--dot:#e0694f' : '--dot:#3a9a62'">Divergências</span>
+                <span class="value" th:classappend="${divergentes > 0} ? 'neg'" th:text="${divergentes}">0</span>
+                <span class="hint" th:text="${divergentes == 0} ? 'saldos conferem com o histórico' : 'saldo difere do histórico'">ok</span>
+            </a>
+            <a class="kpi" th:href="@{/relatorios/auditoria(categoria=${categoria}, filtro='baixo')}" th:classappend="${filtro == 'baixo'} ? 'selected'">
+                <span class="tag" style="--dot:#e0a52a">Abaixo do mínimo</span>
+                <span class="value" th:text="${abaixo}">0</span>
+                <span class="hint">precisam de reposição</span>
+            </a>
+            <a class="kpi" th:href="@{/relatorios/auditoria(categoria=${categoria}, filtro='parados')}" th:classappend="${filtro == 'parados'} ? 'selected'">
+                <span class="tag" style="--dot:#a5a39c">Sem giro</span>
+                <span class="value" th:text="${filtro == 'parados'} ? ${#lists.size(lista)} : '—'">—</span>
+                <span class="hint">sem movimentação há 60+ dias</span>
+            </a>
+            <div class="kpi dark">
+                <span class="tag">Valor auditado</span>
+                <span class="value sm" th:text="${@fmt.moeda(valorTotal)}">R$ 0</span>
+                <span class="hint">saldo × custo unitário</span>
+            </div>
+        </nav>
+
+        <section class="card">
+            <form class="filters" th:action="@{/relatorios/auditoria}" method="get">
+                <input type="hidden" name="filtro" th:value="${filtro}">
+                <label class="chip-field">
+                    Categoria
+                    <select name="categoria">
+                        <option value="">Todas</option>
+                        <option th:each="c : ${categorias}" th:value="${c}" th:text="${c.label}" th:selected="${c == categoria}">c</option>
+                    </select>
+                </label>
+                <button class="btn btn-primary btn-sm" type="submit">Aplicar</button>
+                <span class="spacer"></span>
+                <span class="muted" th:text="${@fmt.plural(#lists.size(lista), 'item listado', 'itens listados')}">0</span>
+            </form>
+
+            <div class="table-wrap" th:unless="${#lists.isEmpty(lista)}">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Localização</th>
+                        <th class="num">Saldo sistema</th>
+                        <th class="num">Saldo calculado</th>
+                        <th>Conferência</th>
+                        <th class="num">Mínimo</th>
+                        <th class="num">Valor</th>
+                        <th>Última movimentação</th>
+                        <th><span class="sr-only">Ações</span></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="a : ${lista}">
+                        <td>
+                            <div class="cell-main">
+                                <span th:replace="~{fragments/layout :: thumb(${a.item()})}"></span>
+                                <div>
+                                    <a class="t" th:href="@{/itens/{id}(id=${a.item().id})}" th:text="${a.item().nome}">Item</a>
+                                    <div class="s mono" th:text="${a.item().codigo}">COD</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="muted nowrap" th:text="${a.item().localizacao != null ? a.item().localizacao : '—'}">A1</td>
+                        <td class="num strong" th:text="${a.item().quantidade}">10</td>
+                        <td class="num" th:text="${a.saldoCalculado()}">10</td>
+                        <td>
+                            <span class="pill dot ok" th:unless="${a.divergente()}">Confere</span>
+                            <span class="pill dot danger" th:if="${a.divergente()}" th:text="'Diferença ' + ${@fmt.sinal(a.divergencia())}">Diferença</span>
+                        </td>
+                        <td class="num">
+                            <span th:text="${a.item().estoqueMinimo}">4</span>
+                            <span class="pill warn" th:if="${a.item().abaixoMinimo}" style="margin-left:6px">repor</span>
+                        </td>
+                        <td class="num" th:text="${@fmt.moeda(a.item().valorEmEstoque)}">R$ 0</td>
+                        <td class="nowrap">
+                            <div class="cell-stack">
+                                <div class="t" th:text="${@fmt.relativo(a.ultimaMovimentacao())}">há 2 dias</div>
+                                <div class="s" th:text="${@fmt.plural(a.totalMovimentos(), 'movimentação', 'movimentações')}">0</div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="row-actions">
+                                <a class="btn btn-ghost btn-sm" th:href="@{/itens/{id}(id=${a.item().id})} + '#inventario'">Contar</a>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty" th:if="${#lists.isEmpty(lista)}">
+                <th:block th:replace="~{fragments/icons :: icon('check-circle')}"/>
+                <strong>Nenhum item neste filtro</strong>
+            </div>
+        </section>
+
+        <section class="card mt">
+            <div class="card-head">
+                <div>
+                    <h2>Ajustes de inventário</h2>
+                    <p class="sub">Correções feitas após contagem física nos últimos 90 dias</p>
+                </div>
+            </div>
+            <div class="table-wrap" th:unless="${#lists.isEmpty(ajustes)}">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Item</th>
+                        <th class="num">Ajuste</th>
+                        <th class="num">Saldo após</th>
+                        <th class="num">Impacto</th>
+                        <th>Justificativa</th>
+                        <th>Responsável</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="m : ${ajustes}">
+                        <td class="nowrap" th:text="${@fmt.dataHora(m.dataHora)}">data</td>
+                        <td><a class="strong" th:href="@{/itens/{id}(id=${m.item.id})}" th:text="${m.item.nome}">Item</a></td>
+                        <td class="num"><span class="qty-delta" th:classappend="${m.quantidade >= 0} ? 'in' : 'out'" th:text="${@fmt.sinal(m.quantidade)}">-1</span></td>
+                        <td class="num" th:text="${m.saldoApos}">0</td>
+                        <td class="num" th:classappend="${m.quantidade < 0} ? 'neg'" th:text="${(m.quantidade < 0 ? '−' : '+') + ' ' + @fmt.moeda(m.custoTotal)}">R$ 0</td>
+                        <td th:text="${m.observacao}">obs</td>
+                        <td class="muted" th:text="${m.usuario}">user</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="empty" th:if="${#lists.isEmpty(ajustes)}">
+                <th:block th:replace="~{fragments/icons :: icon('audit')}"/>
+                <strong>Nenhum ajuste no período</strong>
+                <span>Use “Contar” em um item para registrar uma contagem física.</span>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

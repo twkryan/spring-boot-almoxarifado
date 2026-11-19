@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Histórico')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+    <main class="main">
+        <div th:replace="~{fragments/layout :: flash}"></div>
+
+        <header class="page-head">
+            <div>
+                <h1>Histórico de movimentações</h1>
+                <p class="sub" th:text="'De ' + ${@fmt.data(periodo.de())} + ' a ' + ${@fmt.data(periodo.ate())} + ' · entradas, saídas, devoluções e ajustes.'">período</p>
+            </div>
+            <div class="actions">
+                <a class="btn btn-accent" th:href="@{/relatorios/exportar}">
+                    <th:block th:replace="~{fragments/icons :: icon('export')}"/> Exportar relatórios
+                </a>
+            </div>
+        </header>
+
+        <section class="kpi-strip" aria-label="Resumo do período">
+            <div class="kpi">
+                <span class="tag">Registros</span>
+                <span class="value" th:text="${resumo.registros()}">0</span>
+                <span class="hint">no período filtrado</span>
+            </div>
+            <div class="kpi">
+                <span class="tag" style="--dot:#2f55b5">Unidades movimentadas</span>
+                <span class="value" th:text="${@fmt.numero(resumo.unidades())}">0</span>
+                <span class="hint" th:text="${@fmt.plural(resumo.responsaveis(), 'responsável', 'responsáveis')}">0</span>
+            </div>
+            <div class="kpi dark">
+                <span class="tag">Valor movimentado</span>
+                <span class="value sm" th:text="${@fmt.moeda(resumo.valor())}">R$ 0</span>
+                <span class="hint">pelo custo no momento da movimentação</span>
+            </div>
+        </section>
+
+        <section class="card">
+            <form class="filters" th:action="@{/historico}" method="get">
+                <label class="chip-field search">
+                    <th:block th:replace="~{fragments/icons :: icon('search')}"/>
+                    <span class="sr-only">Buscar</span>
+                    <input type="search" name="q" th:value="${q}" placeholder="Item, código ou observação">
+                </label>
+                <label class="chip-field">De <input type="date" name="de" th:value="${periodo.de()}"></label>
+                <label class="chip-field">Até <input type="date" name="ate" th:value="${periodo.ate()}"></label>
+                <label class="chip-field">
+                    Tipo
+                    <select name="tipo">
+                        <option value="">Todos</option>
+                        <option th:each="t : ${tiposMov}" th:value="${t}" th:text="${t.label}" th:selected="${t == tipo}">tipo</option>
+                    </select>
+                </label>
+                <label class="chip-field">
+                    Técnico
+                    <select name="tecnicoId">
+                        <option value="">Todos</option>
+                        <option th:each="t : ${tecnicos}" th:value="${t.id}" th:text="${t.nome}" th:selected="${t.id == tecnicoId}">t</option>
+                    </select>
+                </label>
+                <label class="chip-field">
+                    Setor
+                    <select name="setorId">
+                        <option value="">Todos</option>
+                        <option th:each="s : ${setores}" th:value="${s.id}" th:text="${s.nome}" th:selected="${s.id == setorId}">s</option>
+                    </select>
+                </label>
+                <button class="btn btn-primary btn-sm" type="submit">Filtrar</button>
+                <a class="btn btn-soft btn-sm" th:href="@{/historico}">Limpar</a>
+            </form>
+
+            <div class="table-wrap" th:unless="${#lists.isEmpty(movs)}">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Item</th>
+                        <th>Técnico / setor</th>
+                        <th class="num">Qtd.</th>
+                        <th class="num">Saldo após</th>
+                        <th class="num">Valor</th>
+                        <th>Registrado por</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="m : ${movs}">
+                        <td class="nowrap">
+                            <div class="cell-stack">
+                                <div class="t" th:text="${@fmt.data(m.dataHora)}">01/01/2026</div>
+                                <div class="s" th:text="${@fmt.hora(m.dataHora)}">10:00</div>
+                            </div>
+                        </td>
+                        <td><span class="pill" th:classappend="${m.tipo.css}" th:text="${m.tipo.label}">Consumo</span></td>
+                        <td>
+                            <div class="cell-main">
+                                <span th:replace="~{fragments/layout :: thumb(${m.item})}"></span>
+                                <div>
+                                    <a class="t" th:href="@{/itens/{id}(id=${m.item.id})}" th:text="${m.item.nome}">Item</a>
+                                    <div class="s" th:text="${m.observacao != null ? m.observacao : m.item.codigo}">obs</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="cell-stack" th:if="${m.tecnico != null or m.setor != null}">
+                                <div class="t" th:text="${m.tecnico != null ? m.tecnico.nome : m.setor.nome}">Nome</div>
+                                <div class="s" th:if="${m.tecnico != null and m.setor != null}" th:text="${m.setor.nome}">Setor</div>
+                            </div>
+                            <span class="faint" th:unless="${m.tecnico != null or m.setor != null}">—</span>
+                        </td>
+                        <td class="num"><span class="qty-delta" th:classappend="${m.variacao >= 0} ? 'in' : 'out'" th:text="${@fmt.sinal(m.variacao)}">-1</span></td>
+                        <td class="num" th:text="${m.saldoApos}">10</td>
+                        <td class="num" th:text="${@fmt.moeda(m.custoTotal)}">R$ 0</td>
+                        <td class="muted" th:text="${m.usuario}">Usuário</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty" th:if="${#lists.isEmpty(movs)}">
+                <th:block th:replace="~{fragments/icons :: icon('history')}"/>
+                <strong>Nenhuma movimentação no período</strong>
+                <span>Amplie as datas ou remova filtros.</span>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

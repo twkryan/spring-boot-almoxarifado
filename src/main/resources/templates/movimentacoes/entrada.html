@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Reposição')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+    <main class="main">
+        <header class="page-head">
+            <div>
+                <h1>Reposição de estoque</h1>
+                <p class="sub">Registre a entrada de material comprado. O valor entra no relatório de custos mensais.</p>
+            </div>
+        </header>
+
+        <div class="grid grid-side">
+            <form class="card" th:action="@{/reposicoes}" th:object="${form}" method="post" autocomplete="off" novalidate>
+                <div class="card-body form">
+                    <div class="alert alert-erro" role="alert" th:if="${#fields.hasGlobalErrors()}">
+                        <th:block th:replace="~{fragments/icons :: icon('alert')}"/>
+                        <span th:each="err : ${#fields.globalErrors()}" th:text="${err}">Erro</span>
+                    </div>
+
+                    <div class="field" th:classappend="${#fields.hasErrors('itemId')} ? 'has-error'">
+                        <label for="itemId">Item</label>
+                        <select class="select" id="itemId" th:field="*{itemId}">
+                            <option value="">Selecione o item…</option>
+                            <option th:each="i : ${itens}" th:value="${i.id}"
+                                    th:text="${i.codigo} + ' — ' + ${i.nome} + ' (saldo ' + ${i.quantidade} + ', mín. ' + ${i.estoqueMinimo} + ')'">item</option>
+                        </select>
+                        <span class="field-error" th:if="${#fields.hasErrors('itemId')}" th:errors="*{itemId}"></span>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="field" th:classappend="${#fields.hasErrors('quantidade')} ? 'has-error'">
+                            <label for="quantidade">Quantidade recebida</label>
+                            <input class="input" id="quantidade" type="number" min="1" th:field="*{quantidade}">
+                            <span class="field-error" th:if="${#fields.hasErrors('quantidade')}" th:errors="*{quantidade}"></span>
+                        </div>
+                        <div class="field" th:classappend="${#fields.hasErrors('custoUnitario')} ? 'has-error'">
+                            <label for="custoUnitario">Custo unitário pago</label>
+                            <div class="input-affix">
+                                <span class="affix">R$</span>
+                                <input class="input" id="custoUnitario" type="text" inputmode="decimal" autocomplete="off" th:field="*{custoUnitario}"
+                                       placeholder="Ex.: 32,90 (em branco mantém o atual)">
+                            </div>
+                            <span class="help">Em branco mantém o custo cadastrado. Um novo valor atualiza o custo do item.</span>
+                            <span class="field-error" th:if="${#fields.hasErrors('custoUnitario')}" th:errors="*{custoUnitario}"></span>
+                        </div>
+                        <div class="field full" th:classappend="${#fields.hasErrors('observacao')} ? 'has-error'">
+                            <label for="observacao">Nota fiscal / fornecedor <span class="faint">(opcional)</span></label>
+                            <input class="input" id="observacao" th:field="*{observacao}" maxlength="300"
+                                   placeholder="NF 45.120 · Distribuidora XYZ">
+                            <span class="field-error" th:if="${#fields.hasErrors('observacao')}" th:errors="*{observacao}"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <a class="btn btn-ghost" th:href="@{/itens}">Cancelar</a>
+                        <button class="btn btn-primary" type="submit">
+                            <th:block th:replace="~{fragments/icons :: icon('check')}"/> Registrar entrada
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <aside class="stack">
+                <section class="card">
+                    <div class="card-head">
+                        <div>
+                            <h2>Sugestões de compra</h2>
+                            <p class="sub">Itens no mínimo ou abaixo dele</p>
+                        </div>
+                    </div>
+                    <div class="card-body flush">
+                        <div class="list" th:unless="${#lists.isEmpty(sugestoes)}">
+                            <a class="list-row" th:each="i : ${sugestoes}" th:href="@{/reposicoes/nova(itemId=${i.id})}">
+                                <span th:replace="~{fragments/layout :: thumb(${i})}"></span>
+                                <div class="body">
+                                    <div class="t" th:text="${i.nome}">Item</div>
+                                    <div class="s" th:text="${i.quantidade} + ' de ' + ${i.estoqueMinimo} + ' ' + ${i.unidade}">0 de 5</div>
+                                </div>
+                                <th:block th:replace="~{fragments/icons :: icon('arrow-right')}"/>
+                            </a>
+                        </div>
+                        <div class="empty" th:if="${#lists.isEmpty(sugestoes)}">
+                            <th:block th:replace="~{fragments/icons :: icon('check-circle')}"/>
+                            <strong>Nada a repor</strong>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+        </div>
+    </main>
+</div>
+</body>
+</html>

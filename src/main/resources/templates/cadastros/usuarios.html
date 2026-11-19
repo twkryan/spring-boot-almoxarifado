@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Usuários')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+    <main class="main">
+        <div th:replace="~{fragments/layout :: flash}"></div>
+
+        <header class="page-head">
+            <div>
+                <h1>Usuários</h1>
+                <p class="sub" th:text="${@fmt.plural(#lists.size(usuarios), 'conta', 'contas')} + ' com acesso ao sistema. Crie um login para cada pessoa da equipe.'">contas</p>
+            </div>
+        </header>
+
+        <div class="grid grid-side">
+            <section class="card">
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>E-mail de acesso</th>
+                            <th>Perfil</th>
+                            <th>Criado em</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="u : ${usuarios}">
+                            <td>
+                                <div class="cell-main">
+                                    <span class="avatar" th:classappend="${@fmt.cor(u.nome)}" th:text="${@fmt.iniciais(u.nome)}">AB</span>
+                                    <div class="cell-stack">
+                                        <div class="t" th:text="${u.nome}">Nome</div>
+                                        <div class="s" th:if="${usuarioLogado != null and usuarioLogado.id == u.id}">Você</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td th:text="${u.email}">email</td>
+                            <td><span class="pill dot" th:classappend="${u.perfil.name() == 'ADMIN'} ? 'accent' : 'neutral'" th:text="${u.perfil.label}">Perfil</span></td>
+                            <td class="muted nowrap" th:text="${@fmt.data(u.criadoEm)}">data</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <form class="card" th:action="@{/usuarios}" th:object="${form}" method="post" novalidate>
+                <div class="card-head">
+                    <div>
+                        <h2>Novo login</h2>
+                        <p class="sub">A pessoa entra com este e-mail e senha. Novas contas entram com o perfil Operador.</p>
+                    </div>
+                </div>
+                <div class="card-body form">
+                    <div class="field" th:classappend="${#fields.hasErrors('nome')} ? 'has-error'">
+                        <label for="nome">Nome completo</label>
+                        <input class="input" id="nome" th:field="*{nome}" maxlength="80" autocomplete="off" placeholder="Nome da pessoa">
+                        <span class="field-error" th:if="${#fields.hasErrors('nome')}" th:errors="*{nome}"></span>
+                    </div>
+                    <div class="field" th:classappend="${#fields.hasErrors('email')} ? 'has-error'">
+                        <label for="email">E-mail</label>
+                        <input class="input" id="email" type="email" th:field="*{email}" maxlength="120" autocomplete="off" placeholder="nome@empresa.com">
+                        <span class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+                    </div>
+                    <div class="field" th:classappend="${#fields.hasErrors('senha')} ? 'has-error'">
+                        <label for="senha">Senha inicial</label>
+                        <input class="input" id="senha" type="password" th:field="*{senha}" autocomplete="new-password" placeholder="Mín. 6 caracteres">
+                        <span class="field-error" th:if="${#fields.hasErrors('senha')}" th:errors="*{senha}"></span>
+                    </div>
+                    <div class="field" th:classappend="${#fields.hasErrors('confirmacao')} ? 'has-error'">
+                        <label for="confirmacao">Confirmar senha</label>
+                        <input class="input" id="confirmacao" type="password" th:field="*{confirmacao}" autocomplete="new-password" placeholder="Repita a senha">
+                        <span class="field-error" th:if="${#fields.hasErrors('confirmacao')}" th:errors="*{confirmacao}"></span>
+                    </div>
+                    <button class="btn btn-primary btn-block" type="submit">
+                        <th:block th:replace="~{fragments/icons :: icon('plus')}"/> Criar login
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+</body>
+</html>

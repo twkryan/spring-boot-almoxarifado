@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Custos de reposição')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+    <main class="main">
+        <header class="page-head">
+            <div>
+                <h1>Custos mensais de reposição</h1>
+                <p class="sub">Quanto foi gasto repondo o almoxarifado, mês a mês, comparado ao valor consumido.</p>
+            </div>
+            <div class="actions">
+                <nav class="seg" aria-label="Período">
+                    <a th:each="n : ${ {3, 6, 12, 24} }" th:href="@{/relatorios/custos(meses=${n})}"
+                       th:classappend="${n == meses} ? 'on'" th:text="${n} + ' meses'">12 meses</a>
+                </nav>
+                <div th:replace="~{fragments/layout :: exportar(@{/relatorios/custos.pdf(meses=${meses})}, @{/relatorios/custos.csv(meses=${meses})})}"></div>
+            </div>
+        </header>
+
+        <section class="kpi-strip" aria-label="Totais">
+            <div class="kpi dark">
+                <span class="tag">Reposição no período</span>
+                <span class="value sm" th:text="${@fmt.moeda(totalReposicao)}">R$ 0</span>
+                <span class="hint" th:text="${@fmt.plural(totalEntradas, 'entrada registrada', 'entradas registradas')}">0</span>
+            </div>
+            <div class="kpi">
+                <span class="tag" style="--dot:#161616">Média mensal</span>
+                <span class="value sm" th:text="${@fmt.moeda(mediaMensal)}">R$ 0</span>
+                <span class="hint" th:text="'em ' + ${meses} + ' meses'">12 meses</span>
+            </div>
+            <div class="kpi">
+                <span class="tag hl">Consumo no período</span>
+                <span class="value sm" th:text="${@fmt.moeda(totalConsumo)}">R$ 0</span>
+                <span class="hint">valor de peças consumidas</span>
+            </div>
+            <div class="kpi" th:if="${pico != null}">
+                <span class="tag" style="--dot:#e0694f">Mês de maior gasto</span>
+                <span class="value sm" th:text="${@fmt.mes(pico.mes())}">Jan/2026</span>
+                <span class="hint" th:text="${@fmt.moeda(pico.reposicao())}">R$ 0</span>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-head">
+                <div>
+                    <h2>Evolução mensal</h2>
+                    <p class="sub">Passe o mouse sobre as barras para ver os valores</p>
+                </div>
+                <div class="legend">
+                    <span><i></i> Reposição</span>
+                    <span><i class="b"></i> Consumo</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div th:replace="~{relatorios/grafico :: barras(${custos})}"></div>
+            </div>
+        </section>
+
+        <div class="grid grid-2 mt">
+            <section class="card">
+                <div class="card-head"><div><h2>Mês a mês</h2><p class="sub">Do mais recente ao mais antigo</p></div></div>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>Mês</th>
+                            <th class="num">Entradas</th>
+                            <th class="num">Reposição</th>
+                            <th class="num">Consumo</th>
+                            <th class="num">Reposição − consumo</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="c : ${custosDesc}">
+                            <td class="strong" th:text="${@fmt.mesLongo(c.mes())}">Janeiro de 2026</td>
+                            <td class="num" th:text="${c.entradas()}">0</td>
+                            <td class="num strong" th:text="${@fmt.moeda(c.reposicao())}">R$ 0</td>
+                            <td class="num" th:text="${@fmt.moeda(c.consumo())}">R$ 0</td>
+                            <td class="num" th:classappend="${c.reposicao().compareTo(c.consumo()) > 0} ? 'neg' : 'pos'"
+                                th:text="${@fmt.moeda(c.reposicao().subtract(c.consumo()))}">R$ 0</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <div class="stack">
+                <section class="card">
+                    <div class="card-head"><div><h2>Itens com maior custo de reposição</h2></div></div>
+                    <div class="card-body"><div th:replace="~{relatorios/ranking :: ranking(${topItens}, 'compra', 'compras')}"></div></div>
+                </section>
+                <section class="card">
+                    <div class="card-head"><div><h2>Reposição por categoria</h2></div></div>
+                    <div class="card-body"><div th:replace="~{relatorios/ranking :: ranking(${porCategoria}, 'compra', 'compras')}"></div></div>
+                </section>
+                <section class="card">
+                    <div class="card-head"><div><h2>Consumo por setor</h2><p class="sub">Para rateio entre centros de custo</p></div></div>
+                    <div class="card-body"><div th:replace="~{relatorios/ranking :: ranking(${consumoPorSetor}, 'consumo', 'consumos')}"></div></div>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

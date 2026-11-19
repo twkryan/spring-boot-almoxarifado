@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Nova retirada')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+    <main class="main">
+        <header class="page-head">
+            <div>
+                <h1>Nova retirada</h1>
+                <p class="sub">Registre o consumo de uma peça ou o empréstimo de um equipamento para um técnico ou setor.</p>
+            </div>
+        </header>
+
+        <div class="grid grid-side">
+            <form class="card" th:action="@{/retiradas}" th:object="${form}" method="post" autocomplete="off" novalidate>
+                <div class="card-body form">
+                    <div class="alert alert-info" th:if="${#lists.isEmpty(itens) or (#lists.isEmpty(tecnicos) and #lists.isEmpty(setores))}">
+                        <th:block th:replace="~{fragments/icons :: icon('alert')}"/>
+                        <span>Para registrar retiradas, cadastre antes
+                            <a class="link" th:if="${#lists.isEmpty(itens)}" th:href="@{/itens/novo}">itens do estoque</a><span th:if="${#lists.isEmpty(itens) and #lists.isEmpty(tecnicos) and #lists.isEmpty(setores)}"> e </span>
+                            <a class="link" th:if="${#lists.isEmpty(tecnicos) and #lists.isEmpty(setores)}" th:href="@{/setores}">setores e técnicos</a>.</span>
+                    </div>
+                    <div class="alert alert-erro" role="alert" th:if="${#fields.hasGlobalErrors()}">
+                        <th:block th:replace="~{fragments/icons :: icon('alert')}"/>
+                        <span th:each="err : ${#fields.globalErrors()}" th:text="${err}">Erro</span>
+                    </div>
+
+                    <div class="field">
+                        <span class="label">Tipo de retirada</span>
+                        <div class="choices">
+                            <label class="choice">
+                                <input type="radio" th:field="*{tipo}" value="CONSUMO">
+                                <span class="box">
+                                    <span class="ic"><th:block th:replace="~{fragments/icons :: icon('out')}"/></span>
+                                    <span><strong>Consumo</strong><span>Baixa definitiva: cabos, conectores, insumos, peças de reposição.</span></span>
+                                </span>
+                            </label>
+                            <label class="choice">
+                                <input type="radio" th:field="*{tipo}" value="EMPRESTIMO">
+                                <span class="box">
+                                    <span class="ic"><th:block th:replace="~{fragments/icons :: icon('loan')}"/></span>
+                                    <span><strong>Empréstimo</strong><span>Sai com prazo e volta ao estoque: ferramentas, monitores, docks.</span></span>
+                                </span>
+                            </label>
+                        </div>
+                        <span class="field-error" th:if="${#fields.hasErrors('tipo')}" th:errors="*{tipo}"></span>
+                    </div>
+
+                    <div class="field" th:classappend="${#fields.hasErrors('itemId')} ? 'has-error'">
+                        <label for="itemId">Item</label>
+                        <select class="select" id="itemId" th:field="*{itemId}">
+                            <option value="">Selecione o item…</option>
+                            <optgroup label="Consumíveis">
+                                <option th:each="i : ${itens}" th:if="${i.tipo.name() == 'CONSUMIVEL'}" th:value="${i.id}"
+                                        th:text="${i.codigo} + ' — ' + ${i.nome} + ' (' + ${i.quantidade} + ' ' + ${i.unidade} + ')'"
+                                        th:disabled="${i.zerado}">item</option>
+                            </optgroup>
+                            <optgroup label="Retornáveis">
+                                <option th:each="i : ${itens}" th:if="${i.tipo.name() == 'RETORNAVEL'}" th:value="${i.id}"
+                                        th:text="${i.codigo} + ' — ' + ${i.nome} + ' (' + ${i.quantidade} + ' ' + ${i.unidade} + ')'"
+                                        th:disabled="${i.zerado}">item</option>
+                            </optgroup>
+                        </select>
+                        <span class="help">Entre parênteses, o saldo disponível. Itens zerados aparecem desabilitados.</span>
+                        <span class="field-error" th:if="${#fields.hasErrors('itemId')}" th:errors="*{itemId}"></span>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="tecnicoId">Técnico</label>
+                            <select class="select" id="tecnicoId" th:field="*{tecnicoId}">
+                                <option value="">— Retirada pelo setor —</option>
+                                <option th:each="t : ${tecnicos}" th:value="${t.id}"
+                                        th:text="${t.nome} + (${t.setor != null} ? ' · ' + ${t.setor.nome} : '')">Técnico</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="setorId">Setor / centro de custo</label>
+                            <select class="select" id="setorId" th:field="*{setorId}">
+                                <option value="">Usar o setor do técnico</option>
+                                <option th:each="s : ${setores}" th:value="${s.id}"
+                                        th:text="${s.nome} + (${s.centroCusto != null and !#strings.isEmpty(s.centroCusto)} ? ' (' + ${s.centroCusto} + ')' : '')">Setor</option>
+                            </select>
+                        </div>
+                        <div class="field" th:classappend="${#fields.hasErrors('quantidade')} ? 'has-error'">
+                            <label for="quantidade">Quantidade</label>
+                            <input class="input" id="quantidade" type="number" min="1" th:field="*{quantidade}">
+                            <span class="field-error" th:if="${#fields.hasErrors('quantidade')}" th:errors="*{quantidade}"></span>
+                        </div>
+                        <div class="field only-loan">
+                            <label for="dataPrevista">Devolver até</label>
+                            <input class="input" id="dataPrevista" type="date" th:field="*{dataPrevista}"
+                                   th:min="${#temporals.format(hoje, 'yyyy-MM-dd')}">
+                        </div>
+                        <div class="field full" th:classappend="${#fields.hasErrors('observacao')} ? 'has-error'">
+                            <label for="observacao">Observação <span class="faint">(opcional)</span></label>
+                            <input class="input" id="observacao" th:field="*{observacao}" maxlength="300"
+                                   placeholder="Nº do chamado, local de instalação, motivo…">
+                            <span class="field-error" th:if="${#fields.hasErrors('observacao')}" th:errors="*{observacao}"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <a class="btn btn-ghost" th:href="@{/itens}">Cancelar</a>
+                        <button class="btn btn-primary" type="submit">
+                            <th:block th:replace="~{fragments/icons :: icon('check')}"/> Registrar retirada
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <aside class="stack">
+                <div class="callout-dark">
+                    <div class="label">Regras da retirada</div>
+                    <div class="v">Quem, o quê, até quando</div>
+                    <div class="s">Toda saída fica no histórico e entra nos relatórios.</div>
+                </div>
+                <div class="note">
+                    <ol>
+                        <li>Itens <strong>consumíveis</strong> só saem por consumo; <strong>retornáveis</strong>, só por empréstimo.</li>
+                        <li>Informe o <strong>técnico</strong>, o <strong>setor</strong> ou ambos. Sem setor, vale o setor do técnico.</li>
+                        <li>O custo da retirada é calculado pelo custo unitário atual do item.</li>
+                        <li>Não é possível retirar mais do que o saldo disponível.</li>
+                    </ol>
+                </div>
+            </aside>
+        </div>
+    </main>
+</div>
+</body>
+</html>

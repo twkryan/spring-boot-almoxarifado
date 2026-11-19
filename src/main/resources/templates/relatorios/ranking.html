@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/* Ranking horizontal: nome, valor e barra proporcional. */-->
+<div th:fragment="ranking(linhas, singular, plural)">
+    <div class="rank" th:unless="${#lists.isEmpty(linhas)}">
+        <div class="rank-row" th:each="r : ${linhas}">
+            <div class="top">
+                <span class="n"><span th:text="${r.nome()}">Nome</span><small th:if="${!#strings.isEmpty(r.detalhe())}" th:text="${r.detalhe()}">det</small></span>
+                <span class="v" th:text="${@fmt.moeda(r.valor())}">R$ 0</span>
+            </div>
+            <div class="meter"><span th:style="|width: ${r.pct()}%|"></span></div>
+            <div class="meta" th:text="${@fmt.plural(r.registros(), singular, plural)} + ' · ' + ${@fmt.plural(r.quantidade(), 'unidade', 'unidades')}">meta</div>
+        </div>
+    </div>
+    <div class="empty" th:if="${#lists.isEmpty(linhas)}">
+        <span>Sem dados no período.</span>
+    </div>
+</div>
+</body>
+</html>

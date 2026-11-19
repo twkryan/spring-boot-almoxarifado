@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/* Gráfico de barras em CSS puro: reposição (escura) x consumo (limão) por mês. */-->
+<div th:fragment="barras(custos)" class="chart" role="img" aria-label="Gráfico de custos mensais de reposição e consumo">
+    <div class="chart-grid"><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="chart-cols">
+        <div class="chart-col" th:each="c, st : ${custos}" th:classappend="${st.last} ? 'current'">
+            <div class="chart-bars">
+                <span class="bar" th:style="|height: ${c.alturaReposicao()}%|"
+                      th:attr="data-v='Reposição ' + ${@fmt.moeda(c.reposicao())}"></span>
+                <span class="bar b" th:style="|height: ${c.alturaConsumo()}%|"
+                      th:attr="data-v='Consumo ' + ${@fmt.moeda(c.consumo())}"></span>
+            </div>
+            <span class="chart-label" th:text="${@fmt.mesCurto(c.mes())}">Jan</span>
+        </div>
+    </div>
+</div>
+</body>
+</html>

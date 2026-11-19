@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Setores')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+    <main class="main">
+        <div th:replace="~{fragments/layout :: flash}"></div>
+
+        <header class="page-head">
+            <div>
+                <h1>Setores</h1>
+                <p class="sub">Centros de custo que recebem material. Os custos de consumo são agrupados por setor.</p>
+            </div>
+        </header>
+
+        <div class="grid grid-side">
+            <section class="card">
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>Setor</th>
+                            <th>Centro de custo</th>
+                            <th>Responsável</th>
+                            <th class="num">Técnicos</th>
+                            <th><span class="sr-only">Ações</span></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="s : ${setores}">
+                            <td>
+                                <div class="cell-main">
+                                    <span class="thumb"><th:block th:replace="~{fragments/icons :: icon('building')}"/></span>
+                                    <span class="t" th:text="${s.nome}">Setor</span>
+                                </div>
+                            </td>
+                            <td><span class="pill outline mono" th:if="${s.centroCusto != null and !#strings.isEmpty(s.centroCusto)}" th:text="${s.centroCusto}">CC</span></td>
+                            <td th:text="${s.responsavel != null and !#strings.isEmpty(s.responsavel) ? s.responsavel : '—'}">Resp</td>
+                            <td class="num" th:text="${equipe[s.id]}">0</td>
+                            <td>
+                                <div class="row-actions">
+                                    <a class="btn btn-soft btn-sm" th:href="@{/relatorios/retiradas(setorId=${s.id}, de=${#temporals.format(#temporals.createToday().minusDays(89), 'yyyy-MM-dd')})}">Retiradas</a>
+                                    <a class="btn btn-ghost btn-sm" th:href="@{/setores(editar=${s.id})}">Editar</a>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="empty" th:if="${#lists.isEmpty(setores)}">
+                    <th:block th:replace="~{fragments/icons :: icon('building')}"/>
+                    <strong>Nenhum setor cadastrado</strong>
+                    <span>Cadastre ao menos um setor antes dos técnicos.</span>
+                </div>
+            </section>
+
+            <form class="card" th:action="@{/setores}" th:object="${setor}" method="post" novalidate>
+                <div class="card-head">
+                    <div>
+                        <h2 th:text="*{id} == null ? 'Novo setor' : 'Editar setor'">Novo setor</h2>
+                        <p class="sub">Use o centro de custo do financeiro para facilitar o rateio.</p>
+                    </div>
+                    <a class="btn btn-soft btn-sm" th:if="*{id} != null" th:href="@{/setores}">Cancelar</a>
+                </div>
+                <div class="card-body form">
+                    <input type="hidden" th:field="*{id}">
+                    <div class="field" th:classappend="${#fields.hasErrors('nome')} ? 'has-error'">
+                        <label for="nome">Nome</label>
+                        <input class="input" id="nome" th:field="*{nome}" maxlength="80" placeholder="Manutenção Predial">
+                        <span class="field-error" th:if="${#fields.hasErrors('nome')}" th:errors="*{nome}"></span>
+                    </div>
+                    <div class="field" th:classappend="${#fields.hasErrors('centroCusto')} ? 'has-error'">
+                        <label for="centroCusto">Centro de custo <span class="faint">(opcional)</span></label>
+                        <input class="input mono" id="centroCusto" th:field="*{centroCusto}" maxlength="20" placeholder="CC-2010">
+                        <span class="field-error" th:if="${#fields.hasErrors('centroCusto')}" th:errors="*{centroCusto}"></span>
+                    </div>
+                    <div class="field" th:classappend="${#fields.hasErrors('responsavel')} ? 'has-error'">
+                        <label for="responsavel">Responsável <span class="faint">(opcional)</span></label>
+                        <input class="input" id="responsavel" th:field="*{responsavel}" maxlength="80" placeholder="Gestor do setor">
+                        <span class="field-error" th:if="${#fields.hasErrors('responsavel')}" th:errors="*{responsavel}"></span>
+                    </div>
+                    <button class="btn btn-primary btn-block" type="submit" th:text="*{id} == null ? 'Cadastrar setor' : 'Salvar alterações'">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Entrar')}"></head>
+<body>
+<div class="auth">
+    <section th:replace="~{auth/arte :: arte}"></section>
+
+    <main class="auth-panel">
+        <div class="auth-box">
+            <h1>Bem-vindo de volta</h1>
+            <p class="sub">Entre para registrar retiradas, devoluções e reposições.</p>
+
+            <div class="flash-stack">
+                <div class="alert alert-erro" role="alert" th:if="${param.erro}">
+                    <th:block th:replace="~{fragments/icons :: icon('alert')}"/>
+                    <span>E-mail ou senha incorretos.</span>
+                </div>
+                <div class="alert alert-ok" role="status" th:if="${param.saiu}">
+                    <th:block th:replace="~{fragments/icons :: icon('check-circle')}"/>
+                    <span>Você saiu da sua conta.</span>
+                </div>
+                <div class="alert alert-ok" role="status" th:if="${sucesso}">
+                    <th:block th:replace="~{fragments/icons :: icon('check-circle')}"/>
+                    <span th:text="${sucesso}">Conta criada.</span>
+                </div>
+            </div>
+
+            <form class="form" th:action="@{/login}" method="post">
+                <div class="field">
+                    <label for="email">E-mail</label>
+                    <input class="input" id="email" name="email" type="email" autocomplete="username"
+                           placeholder="voce@empresa.com" required autofocus>
+                </div>
+                <div class="field">
+                    <label for="senha">Senha</label>
+                    <input class="input" id="senha" name="senha" type="password" autocomplete="current-password"
+                           placeholder="••••••••" required>
+                </div>
+                <label class="check"><input type="checkbox" name="lembrar"> Manter conectado neste computador</label>
+                <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+            </form>
+
+            <p class="auth-alt">Ainda não tem conta? <a class="link" th:href="@{/cadastro}">Criar conta</a></p>
+
+            <a class="first-run" th:if="${semUsuarios}" th:href="@{/cadastro}">
+                <span class="ic"><th:block th:replace="~{fragments/icons :: icon('user')}"/></span>
+                <span>
+                    <strong>Primeiro acesso?</strong>
+                    <span>Ainda não há contas. Crie a sua. A primeira conta vira administradora.</span>
+                </span>
+                <span class="t-learn-chevron"><th:block th:replace="~{fragments/icons :: icon('arrow-right')}"/></span>
+            </a>
+        </div>
+    </main>
+</div>
+</body>
+</html>

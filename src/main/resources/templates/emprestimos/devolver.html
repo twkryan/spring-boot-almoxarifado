@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Registrar devolução')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+    <main class="main">
+        <a class="crumb" th:href="${voltar == 'item'} ? @{/itens/{id}(id=${e.item.id})} : @{/emprestimos(status=${voltar})}">
+            <th:block th:replace="~{fragments/icons :: icon('arrow-left')}"/> Voltar sem registrar
+        </a>
+        <header class="page-head">
+            <div>
+                <h1>Registrar devolução</h1>
+                <p class="sub">Confira o equipamento antes de confirmar. A devolução devolve o item ao estoque e não pode ser desfeita.</p>
+            </div>
+        </header>
+
+        <div class="grid grid-side">
+            <form class="card" th:action="@{/emprestimos/{id}/devolver(id=${e.id})}" method="post" autocomplete="off">
+                <input type="hidden" name="voltar" th:value="${voltar}">
+                <div class="card-body form">
+                    <div class="detail-head">
+                        <span class="thumb lg" th:classappend="'cat-' + ${e.item.categoria.name()}">
+                            <th:block th:replace="~{fragments/icons :: icon(${e.item.categoria.icone})}"/>
+                        </span>
+                        <div class="title">
+                            <h2 style="font-size:20px;font-weight:600" th:text="${e.item.nome}">Item</h2>
+                            <div class="meta">
+                                <span class="pill outline mono" th:text="${e.item.codigo}">COD</span>
+                                <span class="pill dot" th:classappend="${e.status.css}" th:text="${e.status.label}">Em uso</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <dl class="kv">
+                        <div><dt>Com</dt><dd th:text="${e.responsavel} + (${e.tecnico != null and e.setor != null} ? ' · ' + ${e.setor.nome} : '')">Nome</dd></div>
+                        <div><dt>Quantidade</dt><dd th:text="${e.quantidade} + ' ' + ${e.item.unidade}">1 un</dd></div>
+                        <div><dt>Retirado em</dt><dd th:text="${@fmt.dataHora(e.dataRetirada)}">data</dd></div>
+                        <div><dt>Prazo</dt><dd th:text="${@fmt.data(e.dataPrevista)} + ' · ' + ${@fmt.prazo(e.diasParaDevolucao)}">prazo</dd></div>
+                        <div th:if="${e.observacao != null}"><dt>Observação da saída</dt><dd th:text="${e.observacao}">obs</dd></div>
+                    </dl>
+
+                    <div class="field">
+                        <label for="condicao">Condição do equipamento <span class="faint">(opcional)</span></label>
+                        <textarea class="textarea" id="condicao" name="condicao" maxlength="250"
+                                  placeholder="Ex.: voltou sem a capa; ponta do alicate gasta; tudo ok"></textarea>
+                        <span class="help">Fica registrado no histórico do item e na auditoria.</span>
+                    </div>
+
+                    <div class="form-actions">
+                        <a class="btn btn-ghost" th:href="${voltar == 'item'} ? @{/itens/{id}(id=${e.item.id})} : @{/emprestimos(status=${voltar})}">Cancelar</a>
+                        <button class="btn btn-primary" type="submit">
+                            <th:block th:replace="~{fragments/icons :: icon('check')}"/> Confirmar devolução
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <aside class="note">
+                <strong>Antes de confirmar</strong>
+                <ul>
+                    <li>Confira se o equipamento está completo e funcionando.</li>
+                    <li>Se voltou com defeito, anote no campo de condição e, se for o caso, faça depois uma <strong>contagem de inventário</strong> na ficha do item para baixar a unidade avariada.</li>
+                </ul>
+            </aside>
+        </div>
+    </main>
+</div>
+</body>
+</html>

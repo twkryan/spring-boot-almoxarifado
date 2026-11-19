@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Estoque')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+    <main class="main">
+        <div th:replace="~{fragments/layout :: flash}"></div>
+
+        <header class="page-head">
+            <div>
+                <h1>Estoque</h1>
+                <p class="sub">Peças, periféricos e ferramentas do almoxarifado.</p>
+            </div>
+            <div class="actions">
+                <a class="btn btn-ghost" th:href="@{/relatorios/auditoria}">
+                    <th:block th:replace="~{fragments/icons :: icon('audit')}"/> Auditoria
+                </a>
+                <a class="btn btn-primary" th:href="@{/itens/novo}">
+                    <th:block th:replace="~{fragments/icons :: icon('plus')}"/> Novo item
+                </a>
+            </div>
+        </header>
+
+        <section class="kpi-strip" aria-label="Resumo do estoque">
+            <a class="kpi" th:href="@{/itens}" th:classappend="${!baixo and categoria == null and tipo == null and q == ''} ? 'selected'">
+                <span class="tag">Itens ativos</span>
+                <span class="value" th:text="${totalItens}">28</span>
+                <span class="hint">cadastrados no almoxarifado</span>
+            </a>
+            <a class="kpi" th:href="@{/itens(baixo=true)}" th:classappend="${baixo} ? 'selected'">
+                <span class="tag" style="--dot:#e0a52a">Para repor</span>
+                <span class="value" th:text="${totalAbaixo}">4</span>
+                <span class="hint" th:text="${totalZerados == 0} ? 'nenhum zerado' : ${@fmt.plural(totalZerados, 'zerado', 'zerados')}">1 zerado</span>
+            </a>
+            <div class="kpi dark">
+                <span class="tag">Valor em estoque</span>
+                <span class="value sm" th:text="${@fmt.moeda(valorTotal)}">R$ 0</span>
+                <span class="hint">pelo custo unitário atual</span>
+            </div>
+        </section>
+
+        <section class="card">
+            <form class="filters" th:action="@{/itens}" method="get" role="search">
+                <label class="chip-field search">
+                    <th:block th:replace="~{fragments/icons :: icon('search')}"/>
+                    <span class="sr-only">Buscar</span>
+                    <input type="search" name="q" th:value="${q}" placeholder="Buscar por nome, código ou prateleira">
+                </label>
+                <label class="chip-field">
+                    Categoria
+                    <select name="categoria">
+                        <option value="">Todas</option>
+                        <option th:each="c : ${categorias}" th:value="${c}" th:text="${c.label}"
+                                th:selected="${c == categoria}">Cabos</option>
+                    </select>
+                </label>
+                <label class="chip-field">
+                    Controle
+                    <select name="tipo">
+                        <option value="">Todos</option>
+                        <option th:each="t : ${tipos}" th:value="${t}" th:text="${t.label}"
+                                th:selected="${t == tipo}">Retornável</option>
+                    </select>
+                </label>
+                <label class="chip-check">
+                    <input type="checkbox" name="baixo" value="true" th:checked="${baixo}"> Somente para repor
+                </label>
+                <button class="btn btn-primary btn-sm" type="submit">Filtrar</button>
+                <a class="btn btn-soft btn-sm" th:href="@{/itens}">Limpar</a>
+                <span class="spacer"></span>
+                <span class="muted" th:text="${@fmt.plural(#lists.size(itens), 'item', 'itens')} + ' · ' + ${@fmt.moeda(valorFiltrado)}">28 itens</span>
+            </form>
+
+            <div class="table-wrap" th:unless="${#lists.isEmpty(itens)}">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Categoria</th>
+                        <th>Controle</th>
+                        <th>Localização</th>
+                        <th>Estoque</th>
+                        <th class="num">Custo unit.</th>
+                        <th class="num">Valor</th>
+                        <th>Status</th>
+                        <th><span class="sr-only">Ações</span></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="i : ${itens}">
+                        <td>
+                            <div class="cell-main">
+                                <span th:replace="~{fragments/layout :: thumb(${i})}"></span>
+                                <div>
+                                    <a class="t" th:href="@{/itens/{id}(id=${i.id})}" th:text="${i.nome}">Item</a>
+                                    <div class="s mono" th:text="${i.codigo}">COD</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="pill outline" th:text="${i.categoria.label}">Cabos</span></td>
+                        <td class="muted" th:text="${i.tipo.label}">Consumível</td>
+                        <td class="muted nowrap" th:text="${i.localizacao != null ? i.localizacao : '—'}">A1</td>
+                        <td><div th:replace="~{fragments/layout :: stock(${i})}"></div></td>
+                        <td class="num" th:text="${@fmt.moeda(i.custoUnitario)}">R$ 0</td>
+                        <td class="num strong" th:text="${@fmt.moeda(i.valorEmEstoque)}">R$ 0</td>
+                        <td><span class="pill dot" th:classappend="${i.statusCss}" th:text="${i.statusLabel}">Normal</span></td>
+                        <td>
+                            <div class="row-actions">
+                                <a class="btn btn-soft btn-sm" th:href="@{/retiradas/nova(itemId=${i.id})}"
+                                   th:classappend="${i.zerado} ? 'faint'">Retirar</a>
+                                <a class="btn btn-ghost btn-sm" th:href="@{/reposicoes/nova(itemId=${i.id})}">Repor</a>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty" th:if="${#lists.isEmpty(itens)}">
+                <th:block th:replace="~{fragments/icons :: icon('search')}"/>
+                <strong>Nenhum item encontrado</strong>
+                <span>Ajuste os filtros ou <a class="link" th:href="@{/itens/novo}">cadastre um item</a>.</span>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

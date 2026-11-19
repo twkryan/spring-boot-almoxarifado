@@ -1,0 +1,29 @@
+# Build e artefatos
+target/
+build/
+*.jar
+*.war
+
+# Banco local e logs
+data/
+*.log
+*.lock.db
+*.mv.db
+*.trace.db
+
+# Ferramentas e editores
+.git/
+.gitignore
+.github/
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Documentacao e exemplos (nao entram na imagem)
+docs/
+assets/
+README.md
+AGENTS.md
+CLAUDE.md

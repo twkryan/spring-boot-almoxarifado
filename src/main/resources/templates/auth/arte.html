@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/* Painel ilustrativo das telas de login e cadastro (sem números: nada de dados fictícios). */-->
+<section th:fragment="arte" class="auth-art" aria-hidden="true">
+    <div class="brand">
+        <span class="brand-mark"><th:block th:replace="~{fragments/icons :: icon('wrench')}"/></span>
+        <span>
+            <span class="brand-name">Almox TI</span><br>
+            <span class="brand-sub">Almoxarifado de TI &amp; Manutenção</span>
+        </span>
+    </div>
+
+    <div>
+        <h2 class="reveal">Cada cabo, ferramenta e periférico <em>com dono e prazo</em>.</h2>
+        <p class="lead reveal">Empréstimos e consumo por técnico ou setor, auditoria de estoque e custo mensal de
+            reposição num só lugar.</p>
+
+        <ul class="art-features">
+            <li class="art-feature hl">
+                <span class="ic"><th:block th:replace="~{fragments/icons :: icon('loan')}"/></span>
+                <span><strong>Empréstimos com prazo</strong><span>Quem está com cada equipamento e até quando.</span></span>
+            </li>
+            <li class="art-feature">
+                <span class="ic"><th:block th:replace="~{fragments/icons :: icon('out')}"/></span>
+                <span><strong>Consumo por técnico e setor</strong><span>Cada retirada vira custo do centro certo.</span></span>
+            </li>
+            <li class="art-feature">
+                <span class="ic"><th:block th:replace="~{fragments/icons :: icon('audit')}"/></span>
+                <span><strong>Auditoria de saldo</strong><span>O estoque é recalculado a partir do histórico.</span></span>
+            </li>
+        </ul>
+    </div>
+
+    <div class="auth-foot">Spring Boot · Thymeleaf · banco local</div>
+</section>
+</body>
+</html>

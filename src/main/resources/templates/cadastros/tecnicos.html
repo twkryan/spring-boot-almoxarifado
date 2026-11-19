@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Técnicos')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+    <main class="main">
+        <div th:replace="~{fragments/layout :: flash}"></div>
+
+        <header class="page-head">
+            <div>
+                <h1>Técnicos</h1>
+                <p class="sub" th:text="${@fmt.plural(ativos, 'ativo', 'ativos')} + ' de ' + ${@fmt.plural(#lists.size(tecnicos), 'cadastrado', 'cadastrados')} + '. Técnicos inativos não podem retirar material.'">técnicos</p>
+            </div>
+        </header>
+
+        <div class="grid grid-side">
+            <section class="card">
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>Técnico</th>
+                            <th>Setor</th>
+                            <th class="num">Empréstimos abertos</th>
+                            <th>Situação</th>
+                            <th><span class="sr-only">Ações</span></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="t : ${tecnicos}" th:classappend="${!t.ativo} ? 'dim'">
+                            <td>
+                                <div class="cell-main">
+                                    <span class="avatar" th:classappend="${@fmt.cor(t.nome)}" th:text="${@fmt.iniciais(t.nome)}">AB</span>
+                                    <div class="cell-stack">
+                                        <div class="t" th:text="${t.nome}">Nome</div>
+                                        <div class="s"><span class="mono" th:text="${t.matricula}">T-1</span><span th:if="${t.email != null and !#strings.isEmpty(t.email)}" th:text="' · ' + ${t.email}"></span></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td th:text="${t.setor != null ? t.setor.nome : '—'}">Setor</td>
+                            <td class="num">
+                                <a class="link" th:if="${abertos[t.id] != null}" th:href="@{/emprestimos}" th:text="${abertos[t.id]}">2</a>
+                                <span class="faint" th:if="${abertos[t.id] == null}">0</span>
+                            </td>
+                            <td><span class="pill dot" th:classappend="${t.ativo} ? 'ok' : 'neutral'" th:text="${t.ativo} ? 'Ativo' : 'Inativo'">Ativo</span></td>
+                            <td>
+                                <div class="row-actions">
+                                    <a class="btn btn-soft btn-sm" th:href="@{/relatorios/retiradas(tecnicoId=${t.id}, de=${#temporals.format(#temporals.createToday().minusDays(89), 'yyyy-MM-dd')})}">Retiradas</a>
+                                    <a class="btn btn-ghost btn-sm" th:href="@{/tecnicos(editar=${t.id})}">Editar</a>
+                                    <form class="inline-form" th:action="@{/tecnicos/{id}/status(id=${t.id})}" method="post">
+                                        <button class="btn btn-ghost btn-sm" type="submit" th:text="${t.ativo} ? 'Desativar' : 'Reativar'">Desativar</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="empty" th:if="${#lists.isEmpty(tecnicos)}">
+                    <th:block th:replace="~{fragments/icons :: icon('users')}"/>
+                    <strong>Nenhum técnico cadastrado</strong>
+                </div>
+            </section>
+
+            <form class="card" th:action="@{/tecnicos}" th:object="${tecnico}" method="post" novalidate>
+                <div class="card-head">
+                    <div>
+                        <h2 th:text="*{id} == null ? 'Novo técnico' : 'Editar técnico'">Novo técnico</h2>
+                        <p class="sub">Quem pode retirar material do almoxarifado.</p>
+                    </div>
+                    <a class="btn btn-soft btn-sm" th:if="*{id} != null" th:href="@{/tecnicos}">Cancelar</a>
+                </div>
+                <div class="card-body form">
+                    <input type="hidden" th:field="*{id}">
+                    <div class="field" th:classappend="${#fields.hasErrors('nome')} ? 'has-error'">
+                        <label for="nome">Nome</label>
+                        <input class="input" id="nome" th:field="*{nome}" maxlength="80" placeholder="Nome completo">
+                        <span class="field-error" th:if="${#fields.hasErrors('nome')}" th:errors="*{nome}"></span>
+                    </div>
+                    <div class="field" th:classappend="${#fields.hasErrors('matricula')} ? 'has-error'">
+                        <label for="matricula">Matrícula</label>
+                        <input class="input mono" id="matricula" th:field="*{matricula}" maxlength="20" placeholder="T-1006">
+                        <span class="field-error" th:if="${#fields.hasErrors('matricula')}" th:errors="*{matricula}"></span>
+                    </div>
+                    <div class="field" th:classappend="${#fields.hasErrors('email')} ? 'has-error'">
+                        <label for="email">E-mail <span class="faint">(opcional)</span></label>
+                        <input class="input" id="email" type="email" th:field="*{email}" maxlength="120" placeholder="nome@empresa.com">
+                        <span class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+                    </div>
+                    <div class="field" th:classappend="${#fields.hasErrors('setor')} ? 'has-error'">
+                        <label for="setorId">Setor</label>
+                        <select class="select" id="setorId" name="setorId">
+                            <option value="">Selecione…</option>
+                            <option th:each="s : ${setores}" th:value="${s.id}" th:text="${s.nome}"
+                                    th:selected="${tecnico.setor != null and tecnico.setor.id == s.id}">Setor</option>
+                        </select>
+                        <span class="field-error" th:if="${#fields.hasErrors('setor')}" th:errors="*{setor}"></span>
+                    </div>
+                    <button class="btn btn-primary btn-block" type="submit" th:text="*{id} == null ? 'Cadastrar técnico' : 'Salvar alterações'">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+</body>
+</html>

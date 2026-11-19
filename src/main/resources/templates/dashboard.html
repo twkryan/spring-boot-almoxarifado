@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Painel')}"></head>
+<body>
+<div class="app">
+    <aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+    <main class="main">
+        <div th:replace="~{fragments/layout :: flash}"></div>
+
+        <header class="page-head">
+            <div>
+                <h1>Painel</h1>
+                <p class="sub" th:text="'Olá, ' + ${#strings.substringBefore(usuarioLogado.nome + ' ', ' ')} + '. Estado do almoxarifado hoje, ' + ${@fmt.data(#temporals.createToday())} + '.'">
+                    Estado do almoxarifado hoje.</p>
+            </div>
+            <div class="actions">
+                <a class="btn btn-accent" th:href="@{/relatorios/exportar}">
+                    <th:block th:replace="~{fragments/icons :: icon('export')}"/> Exportar relatórios
+                </a>
+                <a class="btn btn-ghost" th:href="@{/reposicoes/nova}">
+                    <th:block th:replace="~{fragments/icons :: icon('in')}"/> Registrar reposição
+                </a>
+                <a class="btn btn-primary" th:href="@{/retiradas/nova}">
+                    <th:block th:replace="~{fragments/icons :: icon('out')}"/> Nova retirada
+                </a>
+            </div>
+        </header>
+
+        <section class="card onboarding" th:if="${resumo.totalItens() == 0}" aria-label="Primeiros passos">
+            <div class="card-body">
+                <div class="t-stagger">
+                    <strong class="t-stagger-line">Vamos montar o seu almoxarifado</strong>
+                    <span class="t-stagger-line t-stagger-line--2">Cadastre os setores, a equipe técnica e os itens do estoque. Depois disso você já registra a primeira retirada, e os indicadores abaixo passam a mostrar o uso real.</span>
+                </div>
+                <ol class="steps">
+                    <li th:classappend="${qtdSetores > 0} ? 'done'">
+                        <span class="n"><span>1</span><th:block th:replace="~{fragments/icons :: icon('check')}"/><span class="sr-only">Concluído</span></span>
+                        <span class="b"><strong>Setores</strong><span th:text="${qtdSetores > 0} ? ${@fmt.plural(qtdSetores, 'setor cadastrado', 'setores cadastrados')} : 'Centros de custo que recebem material'">desc</span></span>
+                        <a class="btn btn-ghost btn-sm t-learn" th:href="@{/setores}">Cadastrar setor <span class="t-learn-chevron"><th:block th:replace="~{fragments/icons :: icon('arrow-right')}"/></span></a>
+                    </li>
+                    <li th:classappend="${qtdTecnicos > 0} ? 'done'">
+                        <span class="n"><span>2</span><th:block th:replace="~{fragments/icons :: icon('check')}"/><span class="sr-only">Concluído</span></span>
+                        <span class="b"><strong>Técnicos</strong><span th:text="${qtdTecnicos > 0} ? ${@fmt.plural(qtdTecnicos, 'técnico cadastrado', 'técnicos cadastrados')} : 'Quem pode retirar material'">desc</span></span>
+                        <a class="btn btn-ghost btn-sm t-learn" th:href="@{/tecnicos}">Cadastrar técnico <span class="t-learn-chevron"><th:block th:replace="~{fragments/icons :: icon('arrow-right')}"/></span></a>
+                    </li>
+                    <li>
+                        <span class="n"><span>3</span><th:block th:replace="~{fragments/icons :: icon('check')}"/><span class="sr-only">Concluído</span></span>
+                        <span class="b"><strong>Itens do estoque</strong><span>Cabos, periféricos, ferramentas e insumos com saldo inicial</span></span>
+                        <a class="btn btn-primary btn-sm t-learn" th:href="@{/itens/novo}">Cadastrar item <span class="t-learn-chevron"><th:block th:replace="~{fragments/icons :: icon('arrow-right')}"/></span></a>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="kpi-strip" aria-label="Indicadores">
+            <a class="kpi dark" th:href="@{/itens}">
+                <span class="tag">Itens em estoque</span>
+                <span class="value" th:text="${resumo.totalItens()}">28</span>
+                <span class="hint" th:text="${@fmt.moeda(resumo.valorEstoque())} + ' em valor'">R$ 0</span>
+            </a>
+            <a class="kpi" th:href="@{/emprestimos}">
+                <span class="tag" style="--dot:#2f55b5">Empréstimos em uso</span>
+                <span class="value" th:text="${resumo.emprestimosAbertos()}">12</span>
+                <span class="hint" th:if="${resumo.emprestimosAtrasados() > 0}">
+                    <span class="neg strong" th:text="${@fmt.plural(resumo.emprestimosAtrasados(), 'atrasado', 'atrasados')}">2 atrasados</span>
+                </span>
+                <span class="hint" th:unless="${resumo.emprestimosAtrasados() > 0}">Nenhum atrasado</span>
+            </a>
+            <a class="kpi" th:href="@{/itens(baixo=true)}">
+                <span class="tag" style="--dot:#e0a52a">Abaixo do mínimo</span>
+                <span class="value" th:text="${resumo.abaixoMinimo()}">4</span>
+                <span class="hint">itens precisam de reposição</span>
+            </a>
+            <a class="kpi" th:href="@{/relatorios/retiradas}">
+                <span class="tag" style="--dot:#3a9a62">Retiradas no mês</span>
+                <span class="value" th:text="${resumo.retiradasMes()}">48</span>
+                <span class="hint" th:text="${@fmt.moeda(resumo.consumoMes())} + ' consumidos'">R$ 0</span>
+            </a>
+            <a class="kpi" th:href="@{/relatorios/custos}">
+                <span class="tag hl">Reposição no mês</span>
+                <span class="value sm" th:text="${@fmt.moeda(resumo.reposicaoMes())}">R$ 0</span>
+                <span class="hint" th:if="${resumo.variacaoReposicao() != null}">
+                    <span class="trend" th:classappend="${resumo.variacaoReposicao() > 0} ? 'up' : 'down'"
+                          th:text="${@fmt.variacao(resumo.variacaoReposicao())}">▲ 4%</span>
+                    vs. mês anterior
+                </span>
+                <span class="hint" th:if="${resumo.variacaoReposicao() == null}">sem base no mês anterior</span>
+            </a>
+        </section>
+
+        <div class="grid grid-2">
+            <section class="card">
+                <div class="card-head">
+                    <div>
+                        <h2>Custos mensais</h2>
+                        <p class="sub">Últimos 6 meses · reposição x consumo</p>
+                    </div>
+                    <div class="legend">
+                        <span><i></i> Reposição</span>
+                        <span><i class="b"></i> Consumo</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div th:replace="~{relatorios/grafico :: barras(${custos})}"></div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-head">
+                    <div>
+                        <h2>Alertas de estoque</h2>
+                        <p class="sub">Itens no mínimo ou abaixo dele</p>
+                    </div>
+                    <a class="btn btn-soft btn-sm" th:href="@{/itens(baixo=true)}">Ver todos</a>
+                </div>
+                <div class="card-body flush">
+                    <div class="list" th:unless="${#lists.isEmpty(alertas)}">
+                        <div class="list-row" th:each="i : ${alertas}">
+                            <span th:replace="~{fragments/layout :: thumb(${i})}"></span>
+                            <div class="body">
+                                <a class="t" th:href="@{/itens/{id}(id=${i.id})}" th:text="${i.nome}">Item</a>
+                                <div class="s" th:text="${i.quantidade} + ' ' + ${i.unidade} + ' em estoque · mínimo ' + ${i.estoqueMinimo}">0</div>
+                            </div>
+                            <a class="btn btn-ghost btn-sm" th:href="@{/reposicoes/nova(itemId=${i.id})}">Repor</a>
+                        </div>
+                    </div>
+                    <div class="empty" th:if="${#lists.isEmpty(alertas)}">
+                        <th:block th:replace="~{fragments/icons :: icon('check-circle')}"/>
+                        <strong>Estoque em dia</strong>
+                        <span>Nenhum item abaixo do mínimo.</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="grid grid-2 mt">
+            <section class="card">
+                <div class="card-head">
+                    <div>
+                        <h2>Próximas devoluções</h2>
+                        <p class="sub">Empréstimos em aberto, do prazo mais curto ao mais longo</p>
+                    </div>
+                    <a class="btn btn-soft btn-sm" th:href="@{/emprestimos}">Todos os empréstimos</a>
+                </div>
+                <div class="table-wrap" th:unless="${#lists.isEmpty(vencendo)}">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>Responsável</th>
+                            <th>Item</th>
+                            <th>Prazo</th>
+                            <th>Status</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="e : ${vencendo}">
+                            <td>
+                                <div class="cell-main">
+                                    <span class="avatar sm" th:classappend="${@fmt.cor(e.responsavel)}" th:text="${@fmt.iniciais(e.responsavel)}">AB</span>
+                                    <div class="cell-stack">
+                                        <div class="t" th:text="${e.responsavel}">Nome</div>
+                                        <div class="s" th:text="${e.setor != null ? e.setor.nome : ''}">Setor</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="cell-stack">
+                                    <div class="t" th:text="${e.item.nome}">Item</div>
+                                    <div class="s" th:text="${e.quantidade} + ' ' + ${e.item.unidade}">1 un</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="due">
+                                    <span class="d" th:text="${@fmt.dataCurta(e.dataPrevista)}">12 nov</span>
+                                    <div class="meter" th:classappend="${e.diasParaDevolucao < 0} ? 'danger' : (${e.diasParaDevolucao <= 2} ? 'warn' : '')">
+                                        <span th:style="|width: ${e.progressoPrazo}%|"></span>
+                                    </div>
+                                    <span class="days" th:classappend="${e.diasParaDevolucao < 0} ? 'late' : (${e.diasParaDevolucao <= 2} ? 'soon' : 'ok')"
+                                          th:text="${@fmt.prazo(e.diasParaDevolucao)}">em 3 dias</span>
+                                </div>
+                            </td>
+                            <td><span class="pill dot" th:classappend="${e.status.css}" th:text="${e.status.label}">Em uso</span></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="empty" th:if="${#lists.isEmpty(vencendo)}">
+                    <th:block th:replace="~{fragments/icons :: icon('loan')}"/>
+                    <strong>Nenhum empréstimo em aberto</strong>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-head">
+                    <div>
+                        <h2>Atividade recente</h2>
+                        <p class="sub">Últimas movimentações registradas</p>
+                    </div>
+                    <a class="btn btn-soft btn-sm" th:href="@{/historico}">Histórico</a>
+                </div>
+                <div class="card-body flush">
+                    <div class="list">
+                        <div class="list-row" th:each="m : ${recentes}">
+                            <span th:replace="~{fragments/layout :: thumb(${m.item})}"></span>
+                            <div class="body">
+                                <div class="t" th:text="${m.item.nome}">Item</div>
+                                <div class="s">
+                                    <span th:text="${m.tipo.label}">Consumo</span> ·
+                                    <span th:text="${m.responsavel != '—' ? m.responsavel : m.usuario}">Responsável</span>
+                                </div>
+                            </div>
+                            <div class="end">
+                                <div class="qty-delta" th:classappend="${m.variacao >= 0} ? 'in' : 'out'"
+                                     th:text="${@fmt.sinal(m.variacao)}">-2</div>
+                                <div th:text="${@fmt.relativo(m.dataHora)}">há 2 h</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="empty" th:if="${#lists.isEmpty(recentes)}">
+                        <th:block th:replace="~{fragments/icons :: icon('history')}"/>
+                        <strong>Nada registrado ainda</strong>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+</body>
+</html>

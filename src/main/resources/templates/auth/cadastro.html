@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Criar conta')}"></head>
+<body>
+<div class="auth">
+    <section th:replace="~{auth/arte :: arte}"></section>
+
+    <main class="auth-panel">
+        <div class="auth-box">
+            <h1>Criar conta</h1>
+            <p class="sub" th:text="${semUsuarios} ? 'Você é o primeiro acesso: esta conta será a administradora do almoxarifado.' : 'Crie seu login de acesso ao almoxarifado.'">Crie seu login.</p>
+
+            <form class="form" th:action="@{/cadastro}" th:object="${form}" method="post" novalidate>
+                <div class="field" th:classappend="${#fields.hasErrors('nome')} ? 'has-error'">
+                    <label for="nome">Nome completo</label>
+                    <input class="input" id="nome" th:field="*{nome}" autocomplete="name" placeholder="Maria Silva" required>
+                    <span class="field-error" th:if="${#fields.hasErrors('nome')}" th:errors="*{nome}"></span>
+                </div>
+                <div class="field" th:classappend="${#fields.hasErrors('email')} ? 'has-error'">
+                    <label for="email">E-mail</label>
+                    <input class="input" id="email" type="email" th:field="*{email}" autocomplete="email"
+                           placeholder="voce@empresa.com" required>
+                    <span class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+                </div>
+                <div class="form-grid">
+                    <div class="field" th:classappend="${#fields.hasErrors('senha')} ? 'has-error'">
+                        <label for="senha">Senha</label>
+                        <input class="input" id="senha" type="password" th:field="*{senha}" autocomplete="new-password"
+                               placeholder="Mín. 6 caracteres" required>
+                        <span class="field-error" th:if="${#fields.hasErrors('senha')}" th:errors="*{senha}"></span>
+                    </div>
+                    <div class="field" th:classappend="${#fields.hasErrors('confirmacao')} ? 'has-error'">
+                        <label for="confirmacao">Confirmar senha</label>
+                        <input class="input" id="confirmacao" type="password" th:field="*{confirmacao}"
+                               autocomplete="new-password" placeholder="Repita a senha" required>
+                        <span class="field-error" th:if="${#fields.hasErrors('confirmacao')}" th:errors="*{confirmacao}"></span>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Criar conta</button>
+            </form>
+
+            <p class="auth-alt">Já tem conta? <a class="link" th:href="@{/login}">Entrar</a></p>
+        </div>
+    </main>
+</div>
+</body>
+</html>
